@@ -31,6 +31,10 @@ app.get('/transparency/:id', transparencyController.getReport)
 app.ws('/save', websocketController.save)
 app.ws('/saveplaylist', websocketController.playlist)
 
+process.on('uncaughtException', err => {
+  logger.info({ message: `Error: ${err.message}` })
+})
+
 app.listen(1337, () => {
   logger.info({ message: 'Server listening on port 1337!' })
 })
