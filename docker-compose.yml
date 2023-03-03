@@ -10,6 +10,7 @@ services:
     volumes:
       - ./logs:/usr/src/preservetube/backend/logs
       - ./.env:/usr/src/preservetube/backend/.env
+      - ./s3.json:/usr/src/preservetube/backend/s3.json
 
 networks:
   public:
