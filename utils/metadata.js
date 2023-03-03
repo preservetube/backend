@@ -1,7 +1,7 @@
 const fetch = require('node-fetch')
 
 async function getInstance() {
-    const instances = [await (await fetch('https://piped-instances.kavin.rocks/')).json()]
+    const instances = await (await fetch('https://piped-instances.kavin.rocks/')).json()
     const list = instances.filter(i => !i.cdn)
     return (list[Math.floor(Math.random() * list.length)]).api_url
 }
