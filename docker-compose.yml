@@ -1,0 +1,17 @@
+version: "3.3"
+
+services:
+  backend:
+    container_name: preservetube-backend
+    image: preservetube/backend
+    networks:
+      - public
+    restart: on-failure
+    volumes:
+      - ./logs:/usr/src/preservetube/backend/logs
+      - ./.env:/usr/src/preservetube/backend/.env
+
+networks:
+  public:
+    external:
+      name: public

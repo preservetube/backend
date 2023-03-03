@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model videos {
+  uuid            String  @id @default(uuid())
+  id              String
+  title           String
+  description     String
+  thumbnail       String
+  source          String
+  published       String
+  archived        String
+  channel         String
+  channelId       String
+  channelVerified Boolean
+  channelAvatar   String
+  playlist        String?
+  disabled        Boolean  @default(false)
+}
+
+model reports {
+  uuid      String    @id @default(uuid())
+  target    String
+  url       String 
+  title     String
+  details   String
+  date      DateTime  @default(now())
+}
