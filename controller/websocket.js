@@ -259,11 +259,11 @@ exports.channel = async (ws, req) => {
 
 exports.addAutodownload = async (req, res) => {
     const confirm = await captcha.checkCaptcha(req.query.captcha)
-    if (!confirm) res.status(500).send('You little goofy goober tried to mess with the captcha...')
+    if (!confirm) return res.status(500).send('You little goofy goober tried to mess with the captcha...')
 
     const channelId = await validate.validateChannelInput(req.query.url)
     if (channelId.fail) {
-        res.status(500).send(channelId.message)
+        return res.status(500).send(channelId.message)
     }
 
     const already = await prisma.autodownload.findFirst({
