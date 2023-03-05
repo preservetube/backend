@@ -172,3 +172,114 @@ exports.playlist = async (ws, req) => {
         ws.send(`DONE - ${process.env.FRONTEND}/playlist?list=${playlistId}`)
     }
 }
+
+exports.channel = async (ws, req) => {
+    logger.info({ message: `${req.path} ${JSON.stringify(req.query)} ${JSON.stringify(req.headers)}` })
+
+    const channelId = await validate.validateChannelInput(req.query.url)
+    if (channelId.fail) {
+        ws.send(`ERROR - ${channelId.message}`)
+        return ws.close()
+    }
+
+    let status = 'captcha'
+    ws.send('CAPTCHA - Please complete the captcha:')
+    
+    ws.on('message', async function(msg) {
+        if (status == 'captcha') {
+            status = 'downloading'
+            const confirm = await captcha.checkCaptcha(msg)
+
+            if (confirm) startDownloading()
+            else {
+                await redis.del(id)
+                ws.send('DATA - You little goofy goober tried to mess with the captcha...')
+                ws.close()
+            }
+        } else {
+            ws.send('DATA - You already sent captcha reply...')
+        }
+    })
+
+    async function startDownloading() {
+        const instance = await metadata.getInstance()
+        const channel = await metadata.getChannelVideos(instance, channelId)
+        for (video of channel.relatedStreams) {
+            const id = video.url.match(/[?&]v=([^&]+)/)[1]
+
+            const already = await prisma.videos.findFirst({
+                where: {
+                    id: id
+                }
+            })
+
+            if (already) {
+                ws.send(`DATA - Already downloaded ${video.title}`)
+                continue
+            }
+
+            if (await redis.get(id)) {
+                ws.send(`DATA - Someone is already downloading ${video.title}, skipping.`)
+                continue
+            }
+
+            ws.send(`INFO - Downloading ${video.title}<br><br>`)
+            await redis.set(id, 'downloading')
+
+            const download = await ytdlp.downloadVideo('https://www.youtube.com' + video.url, ws)
+            if (download.fail) {
+                ws.send(`DATA - ${download.message}`)
+                await redis.del(id)
+                continue
+            } else {
+                await redis.del(id)
+                
+                const file = fs.readdirSync("./videos").find(f => f.includes(id))
+                if (file) {
+                    fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
+                    ws.send(`DATA - Downloaded ${video.title}`)
+                    ws.send(`DATA - Uploading ${video.title}`)
+
+                    const videoUrl = await upload.uploadVideo(`./videos/${id}.webm`)
+                    ws.send(`DATA - Uploaded ${video.title}`)
+                    fs.unlinkSync(`./videos/${id}.webm`)
+
+                    await websocket.createDatabaseVideo(id, videoUrl)
+                    ws.send(`DATA - Created video page for ${video.title}`)
+                } else {
+                    ws.send(`DATA - Failed to find file for ${video.title}. Going to next video`)
+                    continue
+                }
+            }
+        }
+
+        ws.send(`DONE - ${process.env.FRONTEND}/channel/${channelId}`)
+    }
+}
+
+exports.addAutodownload = async (req, res) => {
+    const confirm = await captcha.checkCaptcha(req.query.captcha)
+    if (!confirm) res.status(500).send('You little goofy goober tried to mess with the captcha...')
+
+    const channelId = await validate.validateChannelInput(req.query.url)
+    if (channelId.fail) {
+        res.status(500).send(channelId.message)
+    }
+
+    const already = await prisma.autodownload.findFirst({
+        where: {
+            channel: channelId
+        }
+    })
+
+    if (already) {
+        res.status(500).send(`This channel is already being automatically downloaded...`)
+    } else {
+        await prisma.autodownload.create({
+            data: {
+                channel: channelId
+            }
+        })
+        res.send('Perfect! Each time this channel uploads their videos will be downloaded')
+    }
+}

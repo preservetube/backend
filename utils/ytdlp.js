@@ -8,7 +8,7 @@ async function downloadVideo(url, ws) {
             const msg = data.toString().trim()
             if (!msg) return 
     
-            ws.send(`DATA - ${msg}`)
+            if (ws) ws.send(`DATA - ${msg}`)
         })
 
         child.on("close", async (code, signal) => {

@@ -35,3 +35,8 @@ model reports {
   details   String
   date      DateTime  @default(now())
 }
+
+model autodownload {
+  uuid      String    @id @default(uuid())
+  channel   String
+}
