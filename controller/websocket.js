@@ -44,6 +44,7 @@ exports.save = async (ws, req) => {
 
             if (confirm) startDownloading()
             else {
+                await redis.del(id)
                 ws.send('DATA - You little goofy goober tried to mess with the captcha...')
                 ws.close()
             }
@@ -99,6 +100,7 @@ exports.playlist = async (ws, req) => {
 
             if (confirm) startDownloading()
             else {
+                await redis.del(id)
                 ws.send('DATA - You little goofy goober tried to mess with the captcha...')
                 ws.close()
             }
@@ -146,6 +148,8 @@ exports.playlist = async (ws, req) => {
                 await redis.del(id)
                 continue
             } else {
+                await redis.del(id)
+                
                 const file = fs.readdirSync("./videos").find(f => f.includes(id))
                 if (file) {
                     fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
@@ -158,7 +162,6 @@ exports.playlist = async (ws, req) => {
 
                     await websocket.createDatabaseVideo(id, videoUrl)
                     ws.send(`DATA - Created video page for ${video.title}`)
-                    await redis.del(id)
                 } else {
                     ws.send(`DATA - Failed to find file for ${video.title}. Going to next video in the playlist`)
                     continue
