@@ -1,10 +1,12 @@
+const fetch = require('node-fetch')
+
 async function validateVideoInput(input) {
     if (!input) return {
         fail: true,
         message: 'Missing URL'
     }
 
-    const id = input.match(/https:\/\/(?:(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/)?.[1]
+    const id = (input.trim()).match(/^https:\/\/(?:(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})$/m)?.[1]
     if (!id) return {
         fail: true,
         message: 'Whoops! What is that? That is not a Youtube url.'
@@ -19,7 +21,7 @@ async function validatePlaylistInput(input) {
         message: 'Missing URL'
     }
 
-    const id = input.match(/^.*(youtu.be\/|list=)([^#\&\?]*).*/)?.[2]
+    const id = (input.trim()).match(/^(?:https?:\/\/)?(?:www\.)?youtu(?:(?:\.be)|(?:be\.com))\/playlist\?list=([\w_-]{34})$/m)?.[1]
     if (!id) return {
         fail: true,
         message: 'Whoops! What is that? That is not a Youtube Playlist.'
@@ -34,13 +36,18 @@ async function validateChannelInput(input) {
         message: 'Missing URL'
     }
 
-    const id = input.match(/https?:\/\/(?:www\.)?youtube\.com\/(?:channel\/(.*?)\/featured|(?:.*\/)*(.+))/)?.[2]
+    const id = input.match(/^(?:https?:\/\/)?(?:www\.)?youtu(?:(?:\.be)|(?:be\.com))\/(?:channel\/|@)([\w-]+)/m)?.[1]
     if (!id) return {
         fail: true,
         message: 'Whoops! What is that? That is not a Youtube Channel.'
     }
 
-    return id
+    if (input.includes('@')) {
+        const channelId = await (await fetch(`https://yt.jaybee.digital/api/channels?part=channels&handle=${id}`)).json()
+        return channelId['items'][0]['id']
+    } else {
+        return id
+    }
 }
 
 module.exports = { validateVideoInput, validatePlaylistInput, validateChannelInput }
