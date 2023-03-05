@@ -56,7 +56,7 @@ exports.save = async (ws, req) => {
     async function startDownloading() {
         ws.send('INFO - Spawning yt-dlp!')
 
-        const download = await ytdlp.downloadVideo(req.query.url, ws)
+        const download = await ytdlp.downloadVideo(`https://www.youtube.com/watch?v=${id}`, ws)
         if (download.fail) {
             await redis.del(id)
             ws.send(`DATA - ${download.message}`)
