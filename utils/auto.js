@@ -1,8 +1,12 @@
-const logger = require("./logger.js");
-const metadata = require("./metadata.js")
-const ytdlp = require("./ytdlp.js")
-const redis = require("./redis.js")
-const websocket = require("./websocket.js")
+const fs = require('node:fs')
+
+const upload = require('../utils/upload.js')
+const ytdlp = require('../utils/ytdlp.js')
+const redis = require('../utils/redis.js')
+
+const metadata = require('../utils/metadata.js')
+const websocket = require('../utils/websocket.js')
+const logger = require("../utils/logger.js")
 
 const { PrismaClient } =  require('@prisma/client')
 const prisma = new PrismaClient()
