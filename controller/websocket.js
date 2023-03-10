@@ -191,7 +191,6 @@ exports.channel = async (ws, req) => {
 
             if (confirm) startDownloading()
             else {
-                await redis.del(id)
                 ws.send('DATA - You little goofy goober tried to mess with the captcha...')
                 ws.close()
             }
