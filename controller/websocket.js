@@ -148,8 +148,6 @@ exports.playlist = async (ws, req) => {
                 await redis.del(id)
                 continue
             } else {
-                await redis.del(id)
-                
                 const file = fs.readdirSync("./videos").find(f => f.includes(id))
                 if (file) {
                     fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
@@ -164,8 +162,9 @@ exports.playlist = async (ws, req) => {
                     ws.send(`DATA - Created video page for ${video.title}`)
                 } else {
                     ws.send(`DATA - Failed to find file for ${video.title}. Going to next video in the playlist`)
-                    continue
                 }
+
+                await redis.del(id)
             }
         }
 
@@ -232,8 +231,6 @@ exports.channel = async (ws, req) => {
                 await redis.del(id)
                 continue
             } else {
-                await redis.del(id)
-                
                 const file = fs.readdirSync("./videos").find(f => f.includes(id))
                 if (file) {
                     fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
@@ -248,8 +245,9 @@ exports.channel = async (ws, req) => {
                     ws.send(`DATA - Created video page for ${video.title}`)
                 } else {
                     ws.send(`DATA - Failed to find file for ${video.title}. Going to next video`)
-                    continue
                 }
+
+                await redis.del(id)
             }
         }
 

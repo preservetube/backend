@@ -42,8 +42,6 @@ async function handleDownload(channelId) {
             await redis.del(id)
             continue
         } else {
-            await redis.del(id)
-
             const file = fs.readdirSync("./videos").find(f => f.includes(id))
             if (file) {
                 fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
@@ -56,8 +54,9 @@ async function handleDownload(channelId) {
                 await websocket.createDatabaseVideo(id, videoUrl)
             } else {
                 logger.info({ message: `Couldn't find file for ${video.title}, ${id}` })
-                continue
             }
+
+            await redis.del(id)
         }
     }
 }
