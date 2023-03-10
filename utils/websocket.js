@@ -4,7 +4,7 @@ const prisma = new PrismaClient()
 const metadata = require('./metadata.js')
 const upload = require('./upload.js')
 
-async function createDatabaseVideo(id, videoUrl) {
+async function createDatabaseVideo(id, videoUrl, playlistId) {
     const instance = await metadata.getInstance()
     const data = await metadata.getVideoMetadata(instance, id)
     const uploaderAvatar = await upload.uploadImage((data.uploaderUrl).replace('/channel/', ''), data.uploaderAvatar)
@@ -22,7 +22,8 @@ async function createDatabaseVideo(id, videoUrl) {
             channel: data.uploader,
             channelId: (data.uploaderUrl).replace('/channel/', ''),
             channelAvatar: uploaderAvatar,
-            channelVerified: data.uploaderVerified
+            channelVerified: data.uploaderVerified,
+            playlist: playlistId
         }
     })
 

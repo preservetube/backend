@@ -12,7 +12,7 @@ datasource db {
 
 model videos {
   uuid            String  @id @default(uuid())
-  id              String
+  id              String  @unique
   title           String
   description     String
   thumbnail       String

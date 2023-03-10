@@ -160,7 +160,7 @@ exports.playlist = async (ws, req) => {
                     ws.send(`DATA - Uploaded ${video.title}`)
                     fs.unlinkSync(`./videos/${id}.webm`)
 
-                    await websocket.createDatabaseVideo(id, videoUrl)
+                    await websocket.createDatabaseVideo(id, videoUrl, playlistId)
                     ws.send(`DATA - Created video page for ${video.title}`)
                 } else {
                     ws.send(`DATA - Failed to find file for ${video.title}. Going to next video in the playlist`)
