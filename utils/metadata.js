@@ -1,10 +1,34 @@
 const fetch = require('node-fetch')
 
 async function getInstance() {
-    // const instances = await (await fetch('https://piped-instances.kavin.rocks/')).json()
-    // const list = instances.filter(i => !i.cdn)
-    // return (list[Math.floor(Math.random() * list.length)]).api_url
-    return 'https://pipedapi.kavin.rocks'
+    for (let i = 0; i < 5; i++) {
+        const instance = await actuallyGettingInstance()
+        if (instance) return instance
+    }
+
+    async function actuallyGettingInstance() {
+        const instance = await getRandomInstance() 
+        const test = await testInstance(instance)
+        if (test) return instance
+        else {
+            return false
+        }
+    }
+
+    async function getRandomInstance() {
+        const instances = await (await fetch('https://piped-instances.kavin.rocks/')).json()
+        const list = instances.filter(i => !i.cdn)
+        return (list[Math.floor(Math.random() * list.length)]).api_url
+    }
+
+    async function testInstance(instance) {
+        try {
+            await (await fetch(`${instance}/streams/WDogskpmM7M`)).json()
+            return true 
+        } catch (e) {
+            return false 
+        }
+    }
 }
 
 async function getVideoMetadata(instance, id) {
