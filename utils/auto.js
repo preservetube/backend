@@ -34,6 +34,12 @@ async function handleDownload(channelId) {
         })
 
         if (already) continue
+        if (await redis.get(id)) {
+            logger.info({ message: `Someone is already downloading ${video.title}, ${id}` })
+            continue
+        }
+
+        await redis.set(id, 'downloading')
         logger.info({ message: `Starting to download ${video.title}, ${id}` })
 
         const download = await ytdlp.downloadVideo('https://www.youtube.com' + video.url)
