@@ -2,7 +2,7 @@ const child_process = require('child_process')
 
 async function downloadVideo(url, ws) {
     return new Promise((resolve, reject) => {
-        const child = child_process.spawn("../yt-dlp", ["--max-filesize=1G", url], {cwd: 'videos', shell: false})
+        const child = child_process.spawn("../yt-dlp", ["--max-filesize=2G", url], {cwd: 'videos', shell: false})
         
         child.stdout.on("data", data => {
             const msg = data.toString().trim()
@@ -15,7 +15,7 @@ async function downloadVideo(url, ws) {
             if (code == 2) {
                 reject({
                     fail: true,
-                    message: 'Video file is above 1GB. Consider selfhosting PreserveTube!'
+                    message: 'Video file is above 2GB. Consider selfhosting PreserveTube!'
                 })
             } else {
                 resolve({
