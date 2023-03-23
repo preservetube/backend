@@ -201,8 +201,9 @@ exports.channel = async (ws, req) => {
 
     async function startDownloading() {
         const instance = await metadata.getInstance()
-        const channel = await metadata.getChannelVideos(instance, channelId)
-        for (video of channel.relatedStreams) {
+        const videos = await metadata.getChannelVideos(instance, channelId)
+
+        for (video of videos) {
             const id = video.url.match(/[?&]v=([^&]+)/)[1]
 
             const already = await prisma.videos.findFirst({

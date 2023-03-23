@@ -35,6 +35,7 @@ exports.getVideo = async (req, res) => {
 exports.getChannel = async (req, res) => {
     const instance = await metadata.getInstance()
     const videos = await metadata.getChannelVideos(instance, req.params.id)
+    const channel = await metadata.getChannel(instance, req.params.id)
     if (videos.error) return res.json({ error: '404' })
 
     const archived = await prisma.videos.findMany({
@@ -51,7 +52,7 @@ exports.getChannel = async (req, res) => {
     })
 
     var allVideos = []
-    allVideos = allVideos.concat((videos.relatedStreams).map(video => {
+    allVideos = allVideos.concat((videos).map(video => {
         return { 
             id: video.url.replace('/watch?v=', ''),
             published: (new Date(video.uploaded)).toISOString().slice(0,10),
@@ -77,9 +78,9 @@ exports.getChannel = async (req, res) => {
     allVideos.sort((a, b) => new Date(b.published) - new Date(a.published))
 
     res.json({
-        name: videos.name, 
-        avatar: videos.avatarUrl,
-        verified: videos.verified,
+        name: channel.name, 
+        avatar: channel.avatarUrl,
+        verified: channel.verified,
         videos: allVideos 
     })
 }
