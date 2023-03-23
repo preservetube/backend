@@ -34,9 +34,10 @@ app.ws('/saveplaylist', websocketController.playlist)
 app.ws('/savechannel', websocketController.channel)
 app.get('/autodownload', websocketController.addAutodownload)
 
-setInterval(() => {
-  auto.handleCheck()
-}, 300000)
+auto.handleCheck()
+// setInterval(() => {
+//   auto.handleCheck()
+// }, 300000)
 
 process.on('uncaughtException', err => {
   logger.info({ message: `Error: ${err.message}` })
