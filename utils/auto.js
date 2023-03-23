@@ -14,9 +14,9 @@ const prisma = new PrismaClient()
 async function handleCheck() {
     const channels = await prisma.autodownload.findMany()
 
-    channels.forEach(async (c) => {
+    for (c of channels) {
         await handleDownload(c.channel)
-    })
+    }
 }
 
 async function handleDownload(channelId) {
@@ -58,11 +58,11 @@ async function handleDownload(channelId) {
                 fs.unlinkSync(`./videos/${id}.webm`)
 
                 await websocket.createDatabaseVideo(id, videoUrl)
+                await redis.del(id)
             } else {
+                await redis.set(id, 'error')
                 logger.info({ message: `Couldn't find file for ${video.title}, ${id}` })
             }
-
-            await redis.del(id)
         }
     }
 }
