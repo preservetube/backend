@@ -14,9 +14,9 @@ const prisma = new PrismaClient()
 async function handleCheck() {
     const channels = await prisma.autodownload.findMany()
 
-    for (c of channels) {
+    channels.forEach(async (c) => {
         await handleDownload(c.channel)
-    }
+    })
 }
 
 async function handleDownload(channelId) {
