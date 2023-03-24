@@ -46,8 +46,8 @@ async function getChannelVideos(id) {
     }
 
     async function actualRequest() {
-        try {
-            return new Promise(async (resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
+            try {
                 const videos = []
                 const instance = await getInstance()
                 const json = await (await fetch(`${instance}/channel/${id}`)).json()
@@ -61,10 +61,11 @@ async function getChannelVideos(id) {
                     if (page.nextpage) await getNextPage(page.nextpage)
                     else resolve(videos)
                 }
-            })
-        } catch (e) {
-            return false
-        }
+
+            } catch (e) {
+                reject(e.message)
+            }
+        })
     }
 }
 
