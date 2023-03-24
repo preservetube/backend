@@ -23,6 +23,8 @@ async function handleDownload(channelId) {
     logger.info({ message: `Checking ${channelId} for new videos...` })
 
     const videos = await metadata.getChannelVideos(channelId)
+    if (!videos) return logger.info({ message: `Failed requesting Youtube for ${channelId}` }) 
+    
     for (video of videos) {
         const id = video.url.match(/[?&]v=([^&]+)/)[1]
 
