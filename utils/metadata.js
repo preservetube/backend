@@ -39,7 +39,7 @@ async function getChannel(id) {
     }
 }
 
-async function getChannelVideos(instance, id) {
+async function getChannelVideos(id) {
     for (let i = 0; i < 5; i++) {
         const videos = await actualRequest()
         if (videos) return videos
@@ -49,6 +49,7 @@ async function getChannelVideos(instance, id) {
         try {
             return new Promise(async (resolve, reject) => {
                 const videos = []
+                const instance = await getInstance()
                 const json = await (await fetch(`${instance}/channel/${id}`)).json()
                 videos.push(...json.relatedStreams)
                 if (json.nextpage) await getNextPage(json.nextpage)
