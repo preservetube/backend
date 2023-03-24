@@ -33,9 +33,8 @@ exports.getVideo = async (req, res) => {
 }
 
 exports.getChannel = async (req, res) => {
-    const instance = await metadata.getInstance()
-    const videos = await metadata.getChannelVideos(instance, req.params.id)
-    const channel = await metadata.getChannel(instance, req.params.id)
+    const videos = await metadata.getChannelVideos(req.params.id)
+    const channel = await metadata.getChannel(req.params.id)
     if (videos.error) return res.json({ error: '404' })
 
     const archived = await prisma.videos.findMany({
@@ -66,7 +65,7 @@ exports.getChannel = async (req, res) => {
             const index = allVideos.findIndex(o => o.id == v.id)
             allVideos[index] = v
         } else {
-            const live = await metadata.getVideoMetadata(instance, v.id)
+            const live = await metadata.getVideoMetadata(v.id)
 
             allVideos.push({
                 ...v, 
@@ -86,8 +85,7 @@ exports.getChannel = async (req, res) => {
 }
 
 exports.getPlaylist = async (req, res) => {
-    const instance = await metadata.getInstance()
-    const playlist = await metadata.getPlaylistVideos(instance, req.params.id)
+    const playlist = await metadata.getPlaylistVideos(req.params.id)
     if (playlist.error) return res.json({ error: '404' })
 
     const playlistArchived = await prisma.videos.findMany({
@@ -118,7 +116,7 @@ exports.getPlaylist = async (req, res) => {
             const index = allVideos.findIndex(o => o.id == v.id)
             allVideos[index] = v
         } else {
-            const live = await metadata.getVideoMetadata(instance, v.id)
+            const live = await metadata.getVideoMetadata(v.id)
 
             allVideos.push({
                 ...v, 

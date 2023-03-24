@@ -22,8 +22,7 @@ async function handleCheck() {
 async function handleDownload(channelId) {
     logger.info({ message: `Checking ${channelId} for new videos...` })
 
-    const instance = await metadata.getInstance()
-    const videos = await metadata.getChannelVideos(instance, channelId)
+    const videos = await metadata.getChannelVideos(channelId)
     for (video of videos) {
         const id = video.url.match(/[?&]v=([^&]+)/)[1]
 

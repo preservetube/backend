@@ -110,8 +110,7 @@ exports.playlist = async (ws, req) => {
     })
 
     async function startDownloading() {
-        const instance = await metadata.getInstance()
-        const playlist = await metadata.getPlaylistVideos(instance, playlistId)
+        const playlist = await metadata.getPlaylistVideos(playlistId)
         for (video of playlist.relatedStreams) {
             const id = video.url.match(/[?&]v=([^&]+)/)[1]
 
@@ -200,8 +199,7 @@ exports.channel = async (ws, req) => {
     })
 
     async function startDownloading() {
-        const instance = await metadata.getInstance()
-        const videos = await metadata.getChannelVideos(instance, channelId)
+        const videos = await metadata.getChannelVideos(channelId)
 
         for (video of videos) {
             const id = video.url.match(/[?&]v=([^&]+)/)[1]
