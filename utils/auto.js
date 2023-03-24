@@ -40,6 +40,11 @@ async function handleDownload(channelId) {
             continue
         }
 
+        if (video.duration > 6300) {
+            logger.info({ message: `${video.title} is longer than 1h45m, ${id}` })
+            continue
+        }
+
         await redis.set(id, 'downloading')
         logger.info({ message: `Starting to download ${video.title}, ${id}` })
 
