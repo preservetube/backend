@@ -63,7 +63,7 @@ async function getChannelVideos(id) {
                 }
 
             } catch (e) {
-                reject(e.message)
+                resolve(false)
             }
         })
     }
