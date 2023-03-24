@@ -58,6 +58,8 @@ async function getChannelVideos(id) {
                 async function getNextPage(payload) {
                     const page = await (await fetch(`${instance}/nextpage/channel/${id}?nextpage=${encodeURIComponent(payload)}`)).json()
                     videos.push(...page.relatedStreams)
+
+                    if (videos.length >= 150) resolve(videos)
                     if (page.nextpage) await getNextPage(page.nextpage)
                     else resolve(videos)
                 }
