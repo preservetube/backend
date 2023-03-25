@@ -39,9 +39,9 @@ auto.handleCheck()
 //   auto.handleCheck()
 // }, 300000)
 
-process.on('uncaughtException', err => {
-  logger.info({ message: `Error: ${err.message}` })
-})
+// process.on('uncaughtException', err => {
+//   logger.info({ message: `Error: ${err.message}` })
+// })
 
 app.listen(1337, () => {
   logger.info({ message: 'Server listening on port 1337!' })
