@@ -15,7 +15,13 @@ async function handleCheck() {
     const channels = await prisma.autodownload.findMany()
 
     for (c of channels) {
-        await handleDownload(c.channel)
+        if (await redis.get(c.channel)) {
+            logger.info({ message: `${c.channel} is already being downloaded` })
+        } else {
+            await redis.set(c.channel, 'downloading')
+            await handleDownload(c.channel)
+            await redis.del(c.channel)
+        }
     }
 }
 
@@ -49,7 +55,7 @@ async function handleDownload(channelId) {
         await redis.set(id, 'downloading')
 
         downloadIndex++
-        await delay(downloadIndex * 15000)
+        await delay(downloadIndex * 10000)
 
         logger.info({ message: `Starting to download ${video.title}, ${id}` })
 
