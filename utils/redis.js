@@ -1,4 +1,6 @@
 const Redis = require('ioredis')
+const fs = require('node:fs')
+
 const logger = require("./logger.js")
 
 const redis = new Redis({
@@ -14,6 +16,9 @@ redis.on('ready', async function () {
     const filteredKeys = keys.filter(key => !key.startsWith('blacklist:'))
     if (filteredKeys.length) await redis.del(filteredKeys)
 
-});
+    const files = await fs.readdirSync('videos')
+    const webmFiles = files.filter((file) => file.endsWith('.webm'))
+    webmFiles.forEach((f) => fs.unlinkSync(`videos/${f}`))
+})
 
 module.exports = redis
