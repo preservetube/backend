@@ -47,6 +47,11 @@ async function handleDownload(channelId) {
             return
         }
 
+        if (await redis.get(`blacklist:${id}`)) {
+            logger.info({ message: `${video.title} is blacklisted from downloading, ${id}` })
+            return
+        }
+
         if (video.duration > 5400) {
             logger.info({ message: `${video.title} is longer than 1h30m, ${id}` })
             return

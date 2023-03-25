@@ -24,7 +24,12 @@ exports.save = async (ws, req) => {
 
     if (await redis.get(id)) {
         ws.send('DATA - Someone is already downloading this video...')
-        ws.close()
+        return ws.close()
+    }
+
+    if (await redis.get(`blacklist:${id}`)) {
+        ws.send('DATA - You can\'t download that. The video is blacklisted.')
+        return ws.close()
     }
 
     const already = await prisma.videos.findFirst({
@@ -138,6 +143,11 @@ exports.playlist = async (ws, req) => {
                 continue
             }
 
+            if (await redis.get(`blacklist:${id}`)) {
+                ws.send(`DATA - ${video.title} is blacklisted from downloading, skipping`)
+                continue
+            }
+
             ws.send(`INFO - Downloading ${video.title}<br><br>`)
             await redis.set(id, 'downloading')
 
@@ -220,6 +230,11 @@ exports.channel = async (ws, req) => {
                 continue
             }
 
+            if (await redis.get(`blacklist:${id}`)) {
+                ws.send(`DATA - ${video.title} is blacklisted from downloading, skipping`)
+                continue
+            }
+            
             ws.send(`INFO - Downloading ${video.title}<br><br>`)
             await redis.set(id, 'downloading')
 
