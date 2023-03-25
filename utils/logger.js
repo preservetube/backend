@@ -5,7 +5,7 @@ const logger = winston.createLogger({
         new winston.transports.Console({
             format:winston.format.combine(
                 winston.format.timestamp({format: 'MMM-DD-YYYY HH:mm:ss'}),
-                winston.format.printf(info => `${[info.timestamp]}: ${info.message}\n`),
+                winston.format.printf(info => `${[info.timestamp]}: ${info.message}`),
             )}),
         new winston.transports.File({
             filename: 'logs/client.log',
