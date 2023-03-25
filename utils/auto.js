@@ -24,8 +24,9 @@ async function handleDownload(channelId) {
 
     const videos = await metadata.getChannelVideos(channelId)
     if (!videos) return logger.info({ message: `Failed requesting Youtube for ${channelId}` }) 
-    
-    for (video of videos) {
+    let downloadIndex = 0
+
+    await Promise.all(videos.map(async (video) => {
         const id = video.url.match(/[?&]v=([^&]+)/)[1]
 
         const already = await prisma.videos.findFirst({
@@ -34,25 +35,29 @@ async function handleDownload(channelId) {
             }
         })
 
-        if (already) continue
+        if (already) return
         if (await redis.get(id)) {
             logger.info({ message: `Someone is already downloading ${video.title}, ${id}` })
-            continue
+            return
         }
 
         if (video.duration > 5400) {
             logger.info({ message: `${video.title} is longer than 1h30m, ${id}` })
-            continue
+            return
         }
 
         await redis.set(id, 'downloading')
+
+        downloadIndex++
+        await delay(downloadIndex * 15000)
+
         logger.info({ message: `Starting to download ${video.title}, ${id}` })
 
         const download = await ytdlp.downloadVideo('https://www.youtube.com' + video.url)
         if (download.fail) {
             logger.info({ message: `Failed downloading ${video.title}, ${id} -> ${download.message}` })
             await redis.del(id)
-            continue
+            return
         } else {
             const file = fs.readdirSync("./videos").find(f => f.includes(id))
             if (file) {
@@ -70,7 +75,11 @@ async function handleDownload(channelId) {
                 logger.info({ message: `Couldn't find file for ${video.title}, ${id}` })
             }
         }
-    }
+    }))
 }
 
-module.exports = { handleCheck }
+async function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+module.exports = { handleCheck, handleDownload }
