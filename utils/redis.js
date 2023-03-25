@@ -12,7 +12,7 @@ redis.on('ready', async function () {
 
     const keys = await redis.keys('*')
     const filteredKeys = keys.filter(key => !key.startsWith('blacklist:'))
-    await redis.del(filteredKeys)
+    if (filteredKeys.length) await redis.del(filteredKeys)
 
 });
 
