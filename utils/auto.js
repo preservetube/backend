@@ -60,7 +60,7 @@ async function handleDownload(channelId) {
         await redis.set(id, 'downloading')
 
         downloadIndex++
-        await delay(downloadIndex * 15000)
+        await delay(downloadIndex * 10000)
 
         logger.info({ message: `Starting to download ${video.title}, ${id}` })
 
