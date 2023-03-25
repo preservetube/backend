@@ -4,6 +4,7 @@ const express = require('express')
 const cors = require('cors')
 
 const logger = require('./utils/logger.js')
+const redis = require('./utils/redis.js')
 const auto = require('./utils/auto.js')
 
 const latestController = require('./controller/latest.js')
@@ -34,6 +35,7 @@ app.ws('/saveplaylist', websocketController.playlist)
 app.ws('/savechannel', websocketController.channel)
 app.get('/autodownload', websocketController.addAutodownload)
 
+redis.flushdb()
 auto.handleCheck()
 // setInterval(() => {
 //   auto.handleCheck()
