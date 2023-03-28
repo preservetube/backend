@@ -4,7 +4,6 @@ const express = require('express')
 const cors = require('cors')
 
 const logger = require('./utils/logger.js')
-const auto = require('./utils/auto.js')
 
 const latestController = require('./controller/latest.js')
 const videoController = require('./controller/video.js')
@@ -34,14 +33,9 @@ app.ws('/saveplaylist', websocketController.playlist)
 app.ws('/savechannel', websocketController.channel)
 app.get('/autodownload', websocketController.addAutodownload)
 
-auto.handleCheck()
-// setInterval(() => {
-//   auto.handleCheck()
-// }, 300000)
-
-// process.on('uncaughtException', err => {
-//   logger.info({ message: `Error: ${err.message}` })
-// })
+process.on('uncaughtException', err => {
+  logger.info({ message: `Error: ${err.message}` })
+})
 
 app.listen(1337, () => {
   logger.info({ message: 'Server listening on port 1337!' })
