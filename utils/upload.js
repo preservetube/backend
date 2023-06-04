@@ -13,7 +13,7 @@ async function uploadVideo(video) {
     endpoint: 'https://gateway.storjshare.io'
   })
 
-  const videoFile = fs.readFileSync(video)
+  const videoFile = fs.createReadStream(video)
   await s3.upload({
     Bucket: 'video',
     Key: video.split('/')[2],
