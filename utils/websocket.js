@@ -7,7 +7,7 @@ const upload = require('./upload.js')
 async function createDatabaseVideo(id, videoUrl, playlistId) {
     const data = await metadata.getVideoMetadata(id)
     const uploaderAvatar = await upload.uploadImage((data.uploaderUrl).replace('/channel/', ''), data.uploaderAvatar)
-    const thumbnailUrl = await upload.uploadImage(id, `https://i.ytimg.com/vi_webp/${id}/maxresdefault.webp`)
+    const thumbnailUrl = await upload.uploadImage(id, data.thumbnailUrl)
     
     await prisma.videos.create({
         data: {
