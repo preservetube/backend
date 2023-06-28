@@ -14,7 +14,7 @@ const { PrismaClient } =  require('@prisma/client')
 const prisma = new PrismaClient()
 
 exports.save = async (ws, req) => {
-    logger.info({ message: `${req.path} ${JSON.stringify(req.query)} ${JSON.stringify(req.headers)}` })
+    logger.info({ message: `${req.path} ${JSON.stringify(req.query)}` })
 
     const id = await validate.validateVideoInput(req.query.url)
     if (id.fail) {
@@ -87,7 +87,7 @@ exports.save = async (ws, req) => {
 }
 
 exports.playlist = async (ws, req) => {
-    logger.info({ message: `${req.path} ${JSON.stringify(req.query)} ${JSON.stringify(req.headers)}` })
+    logger.info({ message: `${req.path} ${JSON.stringify(req.query)}` })
 
     const playlistId = await validate.validatePlaylistInput(req.query.url)
     if (playlistId.fail) {
@@ -182,7 +182,7 @@ exports.playlist = async (ws, req) => {
 }
 
 exports.channel = async (ws, req) => {
-    logger.info({ message: `${req.path} ${JSON.stringify(req.query)} ${JSON.stringify(req.headers)}` })
+    logger.info({ message: `${req.path} ${JSON.stringify(req.query)}` })
 
     const channelId = await validate.validateChannelInput(req.query.url)
     if (channelId.fail) {
