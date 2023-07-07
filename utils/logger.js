@@ -2,7 +2,7 @@ const winston = require('winston')
 const { Logtail } = require("@logtail/node")
 const { LogtailTransport } = require("@logtail/winston")
 
-const logtail = new Logtail("YFQdKmZgGvxPpusqxCSxsj2b")
+const logtail = new Logtail(process.env.LOGTAIL)
 
 const logger = winston.createLogger({
     format: winston.format.json(),
