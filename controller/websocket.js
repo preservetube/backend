@@ -117,6 +117,10 @@ exports.playlist = async (ws, req) => {
     async function startDownloading() {
         const playlist = await metadata.getPlaylistVideos(playlistId)
         for (video of playlist.relatedStreams) {
+            if (ws.readyState !== ws.OPEN) {
+                return logger.info({ message: `Stopped downloading ${playlistId}, websocket is closed` })
+            }
+
             const id = video.url.match(/[?&]v=([^&]+)/)[1]
 
             const already = await prisma.videos.findFirst({
@@ -159,16 +163,21 @@ exports.playlist = async (ws, req) => {
             } else {
                 const file = fs.readdirSync("./videos").find(f => f.includes(id))
                 if (file) {
-                    fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
-                    ws.send(`DATA - Downloaded ${video.title}`)
-                    ws.send(`DATA - Uploading ${video.title}`)
+                    try {
+                        fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
+                        ws.send(`DATA - Downloaded ${video.title}`)
+                        ws.send(`DATA - Uploading ${video.title}`)
 
-                    const videoUrl = await upload.uploadVideo(`./videos/${id}.webm`)
-                    ws.send(`DATA - Uploaded ${video.title}`)
-                    fs.unlinkSync(`./videos/${id}.webm`)
+                        const videoUrl = await upload.uploadVideo(`./videos/${id}.webm`)
+                        ws.send(`DATA - Uploaded ${video.title}`)
+                        fs.unlinkSync(`./videos/${id}.webm`)
 
-                    await websocket.createDatabaseVideo(id, videoUrl, playlistId)
-                    ws.send(`DATA - Created video page for ${video.title}`)
+                        await websocket.createDatabaseVideo(id, videoUrl, playlistId)
+                        ws.send(`DATA - Created video page for ${video.title}`)
+                    } catch (e) {
+                        ws.send(`DATA - Failed downloading video ${video.title}. Going to next video`)
+                        logger.error(e)
+                    }
                 } else {
                     ws.send(`DATA - Failed to find file for ${video.title}. Going to next video in the playlist`)
                 }
@@ -212,6 +221,10 @@ exports.channel = async (ws, req) => {
         const videos = await metadata.getChannelVideos(channelId)
 
         for (video of videos) {
+            if (ws.readyState !== ws.OPEN) {
+                return logger.info({ message: `Stopped downloading ${channelId}, websocket is closed` })
+            }
+
             const id = video.url.match(/[?&]v=([^&]+)/)[1]
 
             const already = await prisma.videos.findFirst({
@@ -246,16 +259,21 @@ exports.channel = async (ws, req) => {
             } else {
                 const file = fs.readdirSync("./videos").find(f => f.includes(id))
                 if (file) {
-                    fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
-                    ws.send(`DATA - Downloaded ${video.title}`)
-                    ws.send(`DATA - Uploading ${video.title}`)
+                    try {
+                        fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
+                        ws.send(`DATA - Downloaded ${video.title}`)
+                        ws.send(`DATA - Uploading ${video.title}`)
 
-                    const videoUrl = await upload.uploadVideo(`./videos/${id}.webm`)
-                    ws.send(`DATA - Uploaded ${video.title}`)
-                    fs.unlinkSync(`./videos/${id}.webm`)
+                        const videoUrl = await upload.uploadVideo(`./videos/${id}.webm`)
+                        ws.send(`DATA - Uploaded ${video.title}`)
+                        fs.unlinkSync(`./videos/${id}.webm`)
 
-                    await websocket.createDatabaseVideo(id, videoUrl)
-                    ws.send(`DATA - Created video page for ${video.title}`)
+                        await websocket.createDatabaseVideo(id, videoUrl)
+                        ws.send(`DATA - Created video page for ${video.title}`)
+                    } catch (e) {
+                        ws.send(`DATA - Failed downloading video ${video.title}. Going to next video`)
+                        logger.error(e)
+                    }
                 } else {
                     ws.send(`DATA - Failed to find file for ${video.title}. Going to next video`)
                 }

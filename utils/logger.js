@@ -1,4 +1,9 @@
 const winston = require('winston')
+const { Logtail } = require("@logtail/node")
+const { LogtailTransport } = require("@logtail/winston")
+
+const logtail = new Logtail("YFQdKmZgGvxPpusqxCSxsj2b")
+
 const logger = winston.createLogger({
     format: winston.format.json(),
     transports: [
@@ -13,6 +18,9 @@ const logger = winston.createLogger({
                 winston.format.timestamp({format: 'MMM-DD-YYYY HH:mm:ss'}),
                 winston.format.printf(info => `${[info.timestamp]}: ${info.message}`),
             )}),
+        new LogtailTransport(logtail, {
+            level: 'error'
+        })
     ],
 });
 

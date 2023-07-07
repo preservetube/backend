@@ -4,6 +4,8 @@
   "main": "index.js",
   "license": "AGPL-3.0",
   "dependencies": {
+    "@logtail/node": "^0.4.0",
+    "@logtail/winston": "^0.4.1",
     "@prisma/client": "4.9.0",
     "aws-sdk": "2.1128.0",
     "child_process": "^1.0.2",

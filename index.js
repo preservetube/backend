@@ -34,7 +34,7 @@ app.ws('/savechannel', websocketController.channel)
 app.get('/autodownload', websocketController.addAutodownload)
 
 process.on('uncaughtException', err => {
-  logger.info({ message: `Error: ${err.message}` })
+  logger.error(err)
 })
 
 app.listen(1337, () => {
