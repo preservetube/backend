@@ -4,55 +4,55 @@ const fs = require('node:fs')
 const keys = require('../s3.json')
 
 async function uploadVideo(video) {
-  const items = keys.videos
-  const key = items[Math.floor(Math.random() * items.length)]
+  const key = keys.videos[0]
 
   const s3 = new AWS.S3({
     accessKeyId: key.access,
     secretAccessKey: key.secret,
-    endpoint: 'https://gateway.storjshare.io'
+    endpoint: keys.endpoint,
+    s3ForcePathStyle: true
   })
 
   const videoFile = fs.createReadStream(video)
-  await s3.upload({
-    Bucket: 'video',
+  const uploaded = await s3.upload({
+    Bucket: key.bucket,
     Key: video.split('/')[2],
     Body: videoFile,
     ContentType: 'video/webm',
   }).promise()
 
-  return `${key.url}${video.split('/')[2]}`
+  return uploaded.Location
 }
 
 async function uploadImage(id, url) {
-  const items = keys.images
-  const key = items[Math.floor(Math.random() * items.length)]
+  const key = keys.images[0]
 
   const s3 = new AWS.S3({
     accessKeyId: key.access,
     secretAccessKey: key.secret,
-    endpoint: 'https://gateway.storjshare.io'
+    endpoint: keys.endpoint,
+    s3ForcePathStyle: true
   })
 
   const exists = await checkIfFileExists({
-    Bucket: 'media', 
+    Bucket: key.bucket,
     Key: `${id}.webp`
   }, s3)
-  
+
   if (exists) {
     return `${key.url}${id}.webp`
   } else {
     const response = await fetch(url)
     const buffer = Buffer.from(await response.arrayBuffer())
 
-    await s3.upload({
-      Bucket: 'media',
+    const uploaded = await s3.upload({
+      Bucket: key.bucket,
       Key: `${id}.webp`,
       Body: buffer,
       ContentType: 'video/webp',
     }).promise()
 
-    return `${key.url}${id}.webp`
+    return uploaded.Location
   }
 }
 
