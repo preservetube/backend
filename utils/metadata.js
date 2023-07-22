@@ -1,40 +1,26 @@
 const fetch = require('node-fetch')
 
 async function getInstance() {
-    for (let i = 0; i < 5; i++) {
-        const test = await actualRequest()
-        if (test) return test
-    }
+    const instances = [
+        'https://pipedapi.kavin.rocks',
+        'https://pipedapi-libre.kavin.rocks',
+        'https://piped-api.privacy.com.de',
+        'https://api.piped.projectsegfau.lt',
+        'https://pipedapi.in.projectsegfau.lt',
+        'https://pipedapi.us.projectsegfau.lt',
+        'https://watchapi.whatever.social',
+        'https://api.piped.privacydev.net',
+        'https://pipedapi.palveluntarjoaja.eu',
+        'https://pipedapi.smnz.de',
+        'https://pipedapi.adminforge.de',
+        'https://pipedapi.qdi.fi',
+        'https://piped-api.hostux.net',
+        'https://api.piped.yt',
+        'https://pipedapi.osphost.fi',
+        'https://pipedapi.simpleprivacy.fr'
+    ]
 
-    async function getActualInstance() {
-        const instances = await (await fetch('https://piped-instances.kavin.rocks/')).json()
-        return (instances[Math.floor(Math.random() * instances.length)]).api_url    
-    }
-
-    async function testInstance(instance) {
-        try {
-            const videoRequest = await fetch(`${instance}/streams/dQw4w9WgXcQ`)
-            const videoJson = await videoRequest.json()
-            const thumbnailRequest = await fetch(videoJson.thumbnailUrl)
-        
-            return (videoRequest.status == 200) && (thumbnailRequest.status == 200)
-        } catch (e) {
-            return false
-        }
-    }
-
-    async function actualRequest() {
-        try {
-            const instance = await getActualInstance()
-            const instanceTest = await testInstance(instance)
-
-            if (instanceTest) return instance
-            else return false
-        } catch (e) {
-            return false
-        }
-    }
-
+    return instances[Math.floor(Math.random() * instances.length)]
 }
 
 async function getVideoMetadata(id) {
