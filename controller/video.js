@@ -79,9 +79,9 @@ exports.getChannel = async (req, res) => {
     allVideos.sort((a, b) => new Date(b.published) - new Date(a.published))
 
     res.json({
-        name: channel.name, 
-        avatar: channel.avatarUrl,
-        verified: channel.verified,
+        name: channel.author, 
+        avatar: channel.authorThumbnails[1].url,
+        verified: channel.authorVerified,
         videos: allVideos 
     })
 }

@@ -6,22 +6,24 @@ const upload = require('./upload.js')
 
 async function createDatabaseVideo(id, videoUrl, playlistId) {
     const data = await metadata.getVideoMetadata(id)
-    const uploaderAvatar = await upload.uploadImage((data.uploaderUrl).replace('/channel/', ''), data.uploaderAvatar)
-    const thumbnailUrl = await upload.uploadImage(id, data.thumbnailUrl)
+    const channelData = await metadata.getChannel(data.authorId)
+
+    const uploaderAvatar = await upload.uploadImage(data.authorId, channelData.authorThumbnails[1].url)
+    const thumbnailUrl = await upload.uploadImage(id, data.videoThumbnails.find(o => o.quality == 'maxresdefault').url)
     
     await prisma.videos.create({
         data: {
             id: id,
             title: data.title,
-            description: data.description,
+            description: (data.descriptionHtml).replaceAll('\n', '<br>'),
             thumbnail: thumbnailUrl,
             source: videoUrl,
-            published: data.uploadDate,
+            published: (new Date(data.published*1000)).toISOString().slice(0,10),
             archived: (new Date()).toISOString().slice(0,10),
-            channel: data.uploader,
-            channelId: (data.uploaderUrl).replace('/channel/', ''),
+            channel: channelData.author,
+            channelId: channelData.authorId,
             channelAvatar: uploaderAvatar,
-            channelVerified: data.uploaderVerified,
+            channelVerified: channelData.authorVerified,
             playlist: playlistId
         }
     })
