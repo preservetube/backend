@@ -9,7 +9,7 @@ async function createDatabaseVideo(id, videoUrl, playlistId) {
     const channelData = await metadata.getChannel(data.authorId)
 
     const uploaderAvatar = await upload.uploadImage(data.authorId, channelData.authorThumbnails[1].url)
-    const thumbnailUrl = await upload.uploadImage(id, data.videoThumbnails.find(o => o.quality == 'maxresdefault').url)
+    const thumbnailUrl = await upload.uploadImage(id, data.videoThumbnails[0].url)
     
     await prisma.videos.create({
         data: {
