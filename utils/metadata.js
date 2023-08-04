@@ -1,7 +1,13 @@
 const fetch = require('node-fetch')
 
 async function getInstance() {
-    return 'https://invidious.lain.la'
+    const instances = await (await fetch('https://api.invidious.io/instances.json?pretty=1')).json()
+    return `https://${instances[Math.floor(Math.random() * instances.length)][0]}`
+}
+
+async function getPipedInstance() {
+    const instances = await (await fetch('https://piped-instances.kavin.rocks/')).json()
+    return (instances[Math.floor(Math.random() * instances.length)]).api_url
 }
 
 async function getVideoMetadata(id) {
@@ -20,7 +26,7 @@ async function getChannelVideos(id) {
     return new Promise(async (resolve, reject) => {
         try {
             const videos = []
-            const instance = 'https://pipedapi.kavin.rocks'
+            const instance = await getPipedInstance()
             const json = await (await fetch(`${instance}/channel/${id}`)).json()
             videos.push(...json.relatedStreams)
             if (json.nextpage) await getNextPage(json.nextpage)
@@ -42,7 +48,7 @@ async function getChannelVideos(id) {
 }
 
 async function getPlaylistVideos(id) {
-    const instance ='https://pipedapi.kavin.rocks'
+    const instance = await getPipedInstance()
     const json = await (await fetch(`${instance}/playlists/${id}`)).json()
     return json
 }
