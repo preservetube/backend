@@ -8,7 +8,7 @@ WORKDIR /usr/src/preservetube/backend
 COPY . /usr/src/preservetube/backend
 RUN yarn
 
-RUN wget https://github.com/yt-dlp/yt-dlp/releases/download/2023.03.04/yt-dlp -q
+RUN wget https://github.com/yt-dlp/yt-dlp/releases/download/2023.07.06/yt-dlp -q
 RUN chmod +x yt-dlp
 
 CMD ["node", "index.js"]
