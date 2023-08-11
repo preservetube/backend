@@ -2,7 +2,8 @@ const fetch = require('node-fetch')
 
 async function getInstance() {
     const instances = await (await fetch('https://api.invidious.io/instances.json?pretty=1')).json()
-    return `https://${instances[Math.floor(Math.random() * instances.length)][0]}`
+    const sorted = instances.filter(o => o[1].type == 'https')
+    return `https://${sorted[Math.floor(Math.random() * sorted.length)][0]}`
 }
 
 async function getPipedInstance() {
