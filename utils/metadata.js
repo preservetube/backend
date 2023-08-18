@@ -1,4 +1,5 @@
 const fetch = require('node-fetch')
+const maxRetries = 5
 
 async function getInstance() {
     const instances = await (await fetch('https://api.invidious.io/instances.json?pretty=1')).json()
@@ -12,15 +13,43 @@ async function getPipedInstance() {
 }
 
 async function getVideoMetadata(id) {
-    const instance = await getInstance()
-    const json = await (await fetch(`${instance}/api/v1/videos/${id}?fields=videoId,title,descriptionHtml,videoThumbnails,published,authorId,error&pretty=1`)).json()
-    return json
+    for (let retries = 0; retries < maxRetries; retries++) {
+        try {
+            const instance = await getInstance()
+            const response = await fetch(`${instance}/api/v1/videos/${id}?fields=videoId,title,descriptionHtml,videoThumbnails,published,authorId,error&pretty=1`)
+            
+            if (response.ok) {
+                const json = await response.json()
+                return json
+            } else {
+                continue
+            }
+        } catch (error) {
+            continue
+        }
+    }
+
+    return false
 }
 
 async function getChannel(id) {
-    const instance = await getInstance()
-    const json = await (await fetch(`${instance}/api/v1/channels/${id}?pretty=1`)).json()
-    return json
+    for (let retries = 0; retries < maxRetries; retries++) {
+        try {
+            const instance = await getInstance()
+            const response = await fetch(`${instance}/api/v1/channels/${id}?pretty=1`)
+
+            if (response.ok) {
+                const json = await response.json()
+                return json
+            } else {
+                continue
+            }
+        } catch (error) {
+            continue
+        }
+    }
+
+    return false
 }
 
 async function getChannelVideos(id) {
