@@ -3,7 +3,7 @@ const maxRetries = 5
 
 async function getInstance() {
     const instances = await (await fetch('https://api.invidious.io/instances.json?pretty=1')).json()
-    const sorted = instances.filter(o => o[1].type == 'https' && o[0] != 'invidious.io.lol')
+    const sorted = instances.filter(o => o[1].type == 'https' && o[0] != 'invidious.io.lol' && o[0] != 'invidious.0011.lt')
     return `https://${sorted[Math.floor(Math.random() * sorted.length)][0]}`
 }
 
