@@ -67,11 +67,9 @@ exports.getChannel = async (req, res) => {
             const index = allVideos.findIndex(o => o.id == v.id)
             allVideos[index] = v
         } else {
-            const live = await metadata.getVideoMetadata(v.id)
-
             allVideos.push({
                 ...v, 
-                deleted: live.error ? true : false
+                deleted: undefined
             })
         }
     }))
