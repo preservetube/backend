@@ -3,7 +3,7 @@ version: "3.3"
 services:
   backend:
     container_name: preservetube-backend
-    image: preservetube/backend
+    image: ghcr.io/preservetube/backend
     networks:
       - public
     restart: on-failure
