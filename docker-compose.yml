@@ -6,6 +6,7 @@ services:
     image: ghcr.io/preservetube/backend
     networks:
       - public
+      - db
     restart: on-failure
     volumes:
       - ./logs:/usr/src/preservetube/backend/logs
@@ -14,5 +15,8 @@ services:
 
 networks:
   public:
-    external:
-      name: public
+    external: true
+    name: public
+  db:
+    external: true
+    name: db
