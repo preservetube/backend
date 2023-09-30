@@ -43,6 +43,8 @@ exports.save = async (ws, req) => {
     ws.send('CAPTCHA - Please complete the captcha:')
     
     ws.on('message', async function(msg) {
+        if (msg == 'alive') return 
+
         if (await redis.get(id) != 'downloading') {
             await redis.set(id, 'downloading')
             const confirm = await captcha.checkCaptcha(msg)
@@ -99,6 +101,8 @@ exports.playlist = async (ws, req) => {
     ws.send('CAPTCHA - Please complete the captcha:')
     
     ws.on('message', async function(msg) {
+        if (msg == 'alive') return 
+
         if (status == 'captcha') {
             status = 'downloading'
             const confirm = await captcha.checkCaptcha(msg)
@@ -203,6 +207,8 @@ exports.channel = async (ws, req) => {
     ws.send('CAPTCHA - Please complete the captcha:')
     
     ws.on('message', async function(msg) {
+        if (msg == 'alive') return 
+        
         if (status == 'captcha') {
             status = 'downloading'
             const confirm = await captcha.checkCaptcha(msg)
