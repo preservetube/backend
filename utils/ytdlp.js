@@ -1,4 +1,5 @@
 const child_process = require('child_process')
+const DOMPurify = require('isomorphic-dompurify')
 
 async function downloadVideo(url, ws) {
     return new Promise((resolve, reject) => {
@@ -8,7 +9,14 @@ async function downloadVideo(url, ws) {
             const msg = data.toString().trim()
             if (!msg) return 
     
-            if (ws) ws.send(`DATA - ${msg}`)
+            if (ws) ws.send(`DATA - ${DOMPurify.sanitize(msg)}`)
+        })
+
+        child.stderr.on("data", data => {
+            const msg = data.toString().trim()
+            if (!msg) return 
+    
+            if (ws) ws.send(`DATA - ${DOMPurify.sanitize(msg)}`)
         })
 
         child.on("close", async (code, signal) => {
