@@ -16,6 +16,7 @@
     "ioredis": "^5.3.1",
     "isomorphic-dompurify": "^1.0.0",
     "node-fetch": "2",
+    "rolling-rate-limiter": "^0.4.2",
     "winston": "^3.8.2"
   },
   "devDependencies": {

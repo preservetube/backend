@@ -1,4 +1,6 @@
 const fs = require('node:fs')
+const crypto = require('node:crypto')
+const { RedisRateLimiter } = require('rolling-rate-limiter')
 
 const upload = require('../utils/upload.js')
 const ytdlp = require('../utils/ytdlp.js')
@@ -12,6 +14,13 @@ const logger = require("../utils/logger.js")
 
 const { PrismaClient } =  require('@prisma/client')
 const prisma = new PrismaClient()
+
+const limiter = new RedisRateLimiter({
+    client: redis, 
+    namespace: 'autodownload:',
+    interval: 24 * 60 * 60 * 1000,
+    maxInInterval: 5
+})
 
 exports.save = async (ws, req) => {
     logger.info({ message: `${req.path} ${JSON.stringify(req.query)}` })
@@ -310,6 +319,13 @@ exports.addAutodownload = async (req, res) => {
     if (already) {
         res.status(500).send(`This channel is already being automatically downloaded...`)
     } else {
+        const ipHash = crypto.createHash('sha256').update(req.headers['x-forwarded-for'] || req.connection.remoteAddress).digest('hex')
+        const isLimited = await limiter.limit(ipHash)
+    
+        if (isLimited) return res.status(420).send(`Hey! You have reached the limit of 5 queued auto-download channels per day. Sadly, hard drives don't grow on trees, so rate limits are necessary. The "Save Channel" feature has no limits, so feel free to use that.<br><br>
+        
+Are you planning something awesome? Feel free to email me at admin[@]preservetube.com.`)
+
         await prisma.autodownload.create({
             data: {
                 channel: channelId
