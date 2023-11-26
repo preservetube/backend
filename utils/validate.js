@@ -43,8 +43,8 @@ async function validateChannelInput(input) {
     }
 
     if (input.includes('@')) {
-        const channelId = await (await fetch(`https://pipedapi.kavin.rocks/@/${input.split('@')[1]}`)).json()
-        return channelId['id']
+        const channelId = await (await fetch(`https://yt.jaybee.digital/api/channels?part=channels&handle=${id}`)).json()
+        return channelId['items'][0]['id']
     } else {
         return id
     }
