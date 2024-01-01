@@ -80,22 +80,15 @@ exports.save = async (ws, req) => {
         } else {
             const file = fs.readdirSync("videos").find(f => f.includes(id))
             if (file) {
-                try {
-                    fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
-        
-                    ws.send('DATA - Uploading file...')
-                    const videoUrl = await upload.uploadVideo(`./videos/${id}.webm`)
-                    fs.unlinkSync(`./videos/${id}.webm`)
+                fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
+    
+                ws.send('DATA - Uploading file...')
+                const videoUrl = await upload.uploadVideo(`./videos/${id}.webm`)
+                fs.unlinkSync(`./videos/${id}.webm`)
 
-                    await websocket.createDatabaseVideo(id, videoUrl)
-                    ws.send(`DONE - ${process.env.FRONTEND}/watch?v=${id}`)
-                } catch (e) {
-                    ws.send('DATA - Server side error while processing video. Please try again.')
-                    fs.unlinkSync(`./videos/${id}.webm`)
-                    logger.error(e)
-                }
-            } else {
-                ws.send('DATA - Failed to find file video.')
+                await websocket.createDatabaseVideo(id, videoUrl)
+
+                ws.send(`DONE - ${process.env.FRONTEND}/watch?v=${id}`)
             }
             
             await redis.del(id)
@@ -196,7 +189,6 @@ exports.playlist = async (ws, req) => {
                         ws.send(`DATA - Created video page for ${video.title}`)
                     } catch (e) {
                         ws.send(`DATA - Failed downloading video ${video.title}. Going to next video`)
-                        fs.unlinkSync(`./videos/${id}.webm`)
                         logger.error(e)
                     }
                 } else {
@@ -295,7 +287,6 @@ exports.channel = async (ws, req) => {
                         ws.send(`DATA - Created video page for ${video.title}`)
                     } catch (e) {
                         ws.send(`DATA - Failed downloading video ${video.title}. Going to next video`)
-                        fs.unlinkSync(`./videos/${id}.webm`)
                         logger.error(e)
                     }
                 } else {
