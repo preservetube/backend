@@ -16,9 +16,18 @@ redis.on('ready', async function () {
     const filteredKeys = keys.filter(key => !key.startsWith('blacklist:'))
     if (filteredKeys.length) await redis.del(filteredKeys)
 
-    const files = await fs.readdirSync('videos')
-    const webmFiles = files.filter((file) => file.endsWith('.webm'))
-    webmFiles.forEach((f) => fs.unlinkSync(`videos/${f}`))
+    setInterval(async () => {
+        const files = fs.readdirSync('videos')
+        const webmFiles = files.filter((file) => file.endsWith('.webm'))
+        webmFiles.forEach(async (f) => {
+            const videoId = f.replace('.webm', '')
+            const isActive = await redis.get(videoId)
+            if (!isActive) {
+                fs.unlinkSync(`./videos/${f}`)
+                logger.info({ message: `deleted file ${f} because there is no active download of it` })
+            }
+        })
+    }, 5*60000)
 })
 
 module.exports = redis
