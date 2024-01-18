@@ -25,6 +25,8 @@ model videos {
   channelAvatar   String
   playlist        String?
   disabled        Boolean  @default(false)
+
+  @@index([title], name: "idx_title")
 }
 
 model reports {

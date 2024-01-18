@@ -49,7 +49,8 @@ exports.save = async (ws, req) => {
 
     if (already) return ws.send(`DONE - ${process.env.FRONTEND}/watch?v=${id}`)
     
-    ws.send('CAPTCHA - Please complete the captcha:')
+    ws.send('DATA - This process is automatic. Your video will start archiving shortly.')
+    ws.send('CAPTCHA - Solving a cryptographic challenge before downloading.')
     
     ws.on('message', async function(msg) {
         if (msg == 'alive') return 
@@ -107,7 +108,8 @@ exports.playlist = async (ws, req) => {
     }
 
     let status = 'captcha'
-    ws.send('CAPTCHA - Please complete the captcha:')
+    ws.send('DATA - This process is automatic. Your video will start archiving shortly.')
+    ws.send('CAPTCHA - Solving a cryptographic challenge before downloading.')
     
     ws.on('message', async function(msg) {
         if (msg == 'alive') return 
@@ -213,7 +215,8 @@ exports.channel = async (ws, req) => {
     }
 
     let status = 'captcha'
-    ws.send('CAPTCHA - Please complete the captcha:')
+    ws.send('DATA - This process is automatic. Your video will start archiving shortly.')
+    ws.send('CAPTCHA - Solving a cryptographic challenge before downloading.')
     
     ws.on('message', async function(msg) {
         if (msg == 'alive') return 
