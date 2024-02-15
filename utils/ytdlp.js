@@ -21,13 +21,13 @@ async function downloadVideo(url, ws) {
         })
 
         child.on("close", async (code, signal) => {
-            if (code == 0) { // https://itsfoss.com/linux-exit-codes/
+            if (code == 2) {
                 reject({
-                    fail: false
+                    fail: true
                 })
             } else {
                 resolve({
-                    fail: true
+                    fail: false
                 })
             }
         })
