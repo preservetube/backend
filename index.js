@@ -19,6 +19,7 @@ app.use(cors())
 app.get('/latest', latestController.getLatest)
 app.get('/video/:id', videoController.getVideo)
 app.get('/channel/:id', videoController.getChannel)
+app.get('/channel/:id/videos', videoController.getOnlyChannelVideos)
 app.get('/playlist/:id', videoController.getPlaylist)
 
 app.get('/search/video', searchController.searchVideo)

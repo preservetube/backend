@@ -3,28 +3,37 @@ const prisma = new PrismaClient()
 
 const DOMPurify = require('isomorphic-dompurify')
 const metadata = require('../utils/metadata.js')
+const redis = require('../utils/redis.js')
 
 exports.getVideo = async (req, res) => {
-    const info = await prisma.videos.findFirst({
-        where: {
-            id: req.params.id
-        },
-        select: {
-            title: true,
-            description: true,
-            thumbnail: true,
-            source: true,
-            published: true,
-            archived: true,
-            channel: true, 
-            channelId: true, 
-            channelAvatar: true,
-            channelVerified: true,
-            disabled: true
-        }
-    })
-    
-    if (!info) return res.json({ error: '404' })
+    let info
+    const cached = await redis.get(`video:${req.params.id}`)
+
+    if (cached) {
+        info = JSON.parse(cached)
+    } else {
+        info = await prisma.videos.findFirst({
+            where: {
+                id: req.params.id
+            },
+            select: {
+                title: true,
+                description: true,
+                thumbnail: true,
+                source: true,
+                published: true,
+                archived: true,
+                channel: true, 
+                channelId: true, 
+                channelAvatar: true,
+                channelVerified: true,
+                disabled: true
+            }
+        })
+        
+        if (!info) return res.json({ error: '404' })
+        await redis.set(`video:${req.params.id}`, JSON.stringify(info), 'EX', 3600)
+    }
 
     res.json({
         ...info,
@@ -33,11 +42,17 @@ exports.getVideo = async (req, res) => {
 }
 
 exports.getChannel = async (req, res) => {
-    const videos = await metadata.getChannelVideos(req.params.id)
-    const channel = await metadata.getChannel(req.params.id)
+    const cached = await redis.get(`channel:${req.params.id}`)
+    if (cached) return res.json(JSON.parse(cached))
 
-    if (!videos || !channel) return res.json({ error: '500' })
-    if (videos.error) return res.json({ error: '404' })
+    const [videos, channel] = await Promise.all([
+        metadata.getChannelVideos(req.params.id),
+        metadata.getChannel(req.params.id)
+    ])
+
+    if (!videos || !channel || videos.error) {
+        return res.json({ error: '404' });
+    }
 
     const archived = await prisma.videos.findMany({
         where: {
@@ -52,43 +67,66 @@ exports.getChannel = async (req, res) => {
         }
     })
 
-    var allVideos = []
-    allVideos = allVideos.concat((videos).map(video => {
-        return { 
-            id: video.url.replace('/watch?v=', ''),
-            published: (new Date(video.uploaded)).toISOString().slice(0,10),
-            ...video
-        }
-    }))
-
-    await Promise.all(archived.map(async (v) => {
-        const allVideo = allVideos.find(o => o.id == v.id)
-        if (allVideo) {
-            const index = allVideos.findIndex(o => o.id == v.id)
-            allVideos[index] = v
+    const processedVideos = videos.map(video => ({
+        id: video.url.replace('/watch?v=', ''),
+        published: new Date(video.uploaded).toISOString().slice(0, 10),
+        ...video
+    }));
+    
+    archived.forEach(v => {
+        const existingVideoIndex = processedVideos.findIndex(video => video.id === v.id);
+        if (existingVideoIndex !== -1) {
+            processedVideos[existingVideoIndex] = v;
         } else {
-            allVideos.push({
-                ...v, 
-                deleted: undefined
-            })
+            processedVideos.push({ ...v, deleted: undefined });
         }
-    }))
-
-    allVideos.sort((a, b) => new Date(b.published) - new Date(a.published))
-
-    res.json({
-        name: channel.author, 
+    });
+    
+    processedVideos.sort((a, b) => new Date(b.published) - new Date(a.published));
+    
+    const json = {
+        name: channel.author,
         avatar: channel.authorThumbnails[1].url,
         verified: channel.authorVerified,
-        videos: allVideos 
+        videos: processedVideos
+    }
+    await redis.set(`channel:${req.params.id}`, JSON.stringify(json), 'EX', 3600)
+    res.json(json)
+}
+
+exports.getOnlyChannelVideos = async (req, res) => {
+    const cached = await redis.get(`channelVideos:${req.params.id}`)
+    if (cached) return res.json(JSON.parse(cached))
+
+    const archived = await prisma.videos.findMany({
+        where: {
+            channelId: req.params.id
+        }, 
+        select: {
+            id: true,
+            title: true,
+            thumbnail: true,
+            published: true,
+            archived: true
+        },
+        orderBy: {
+            published: 'desc'
+        }
     })
+
+    const json = {
+        videos: archived 
+    }
+    await redis.set(`channelVideos:${req.params.id}`, JSON.stringify(json), 'EX', 3600)
+    res.json(json)
 }
 
 exports.getPlaylist = async (req, res) => {
+    const cached = await redis.get(`playlist:${req.params.id}`)
+    if (cached) return res.json(JSON.parse(cached))
+
     const playlist = await metadata.getPlaylistVideos(req.params.id)
-    
-    if (!playlist) return res.json({ error: '500' })
-    if (playlist.error) return res.json({ error: '404' })
+    if (!playlist || playlist.error) return res.json({ error: '404' })
 
     const playlistArchived = await prisma.videos.findMany({
         where: {
@@ -103,59 +141,54 @@ exports.getPlaylist = async (req, res) => {
         }
     })
 
-    var allVideos = []
-    allVideos = allVideos.concat((playlist.relatedStreams).map(video => {
-        return { 
-            id: video.url.replace('/watch?v=', ''),
-            published: (new Date(video.uploaded)).toISOString().slice(0,10),
-            ...video
-        }
-    }))
+    const allVideos = playlist.relatedStreams.map(video => ({
+        id: video.url.replace('/watch?v=', ''),
+        published: new Date(video.uploaded).toISOString().slice(0, 10),
+        ...video
+    }));
 
     await Promise.all(playlistArchived.map(async (v) => {
-        const allVideo = allVideos.find(o => o.id == v.id)
+        const allVideo = allVideos.find(o => o.id == v.id);
         if (allVideo) {
-            const index = allVideos.findIndex(o => o.id == v.id)
-            allVideos[index] = v
+            const index = allVideos.findIndex(o => o.id == v.id);
+            allVideos[index] = v;
         } else {
-            const live = await metadata.getVideoMetadata(v.id)
-
+            const live = await metadata.getVideoMetadata(v.id);
             allVideos.push({
-                ...v, 
+                ...v,
                 deleted: live.error ? true : false
-            })
+            });
         }
-    }))
-
-    await Promise.all(allVideos.map(async (v) => {
-        if (!v.archived) {
-            const video = await prisma.videos.findFirst({
-                where: {
-                    id: v.id
-                }, 
-                select: {
-                    id: true,
-                    title: true,
-                    thumbnail: true,
-                    published: true,
-                    archived: true
-                }
-            })
-
-            if (video) {
-                const index = allVideos.findIndex(o => o.id == v.id)
-                allVideos[index] = video
+    }));
+    
+    await Promise.all(allVideos.filter(v => !v.archived).map(async (v) => {
+        const video = await prisma.videos.findFirst({
+            where: {
+                id: v.id
+            },
+            select: {
+                id: true,
+                title: true,
+                thumbnail: true,
+                published: true,
+                archived: true
             }
+        });
+        if (video) {
+            const index = allVideos.findIndex(o => o.id == v.id);
+            allVideos[index] = video;
         }
-    }))
-
-    allVideos.sort((a, b) => new Date(a.published) - new Date(b.published))
-
-    res.json({
+    }));
+    
+    allVideos.sort((a, b) => new Date(b.published) - new Date(a.published));
+    
+    const json = {
         name: playlist.name,
-        channel: playlist.uploader, 
+        channel: playlist.uploader,
         url: playlist.uploaderUrl,
         avatar: playlist.uploaderAvatar,
-        videos: allVideos 
-    })
+        videos: allVideos
+    }
+    await redis.set(`playlist:${req.params.id}`, JSON.stringify(json), 'EX', 3600)
+    res.json(json)
 }

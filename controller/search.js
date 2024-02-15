@@ -1,8 +1,22 @@
+const crypto = require('node:crypto')
 const validate = require('../utils/validate.js')
+const redis = require('../utils/redis.js')
+const { RedisRateLimiter } = require('rolling-rate-limiter')
 const { PrismaClient } =  require('@prisma/client')
 const prisma = new PrismaClient()
 
+const limiter = new RedisRateLimiter({
+    client: redis, 
+    namespace: 'search:',
+    interval: 5 * 60 * 1000,
+    maxInInterval: 5
+})
+
 exports.searchVideo = async (req, res) => {
+    const ipHash = crypto.createHash('sha256').update(req.headers['x-userip'] || '0.0.0.0').digest('hex')
+    const isLimited = await limiter.limit(ipHash)
+    if (isLimited) return res.status(429).send('error-You have been ratelimited.')
+
     const id = await validate.validateVideoInput(req.query.search)
     if (id.fail) {
         const videos = await prisma.videos.findMany({
@@ -24,7 +38,7 @@ exports.searchPlaylist = async (req, res) => {
     if (id.fail) {
         res.status(500).send(id.message)
     } else {
-        res.send(`<script>window.location.href = '${process.env.FRONTEND}/playlist?list=${id}'</script>`)
+        res.redirect(`${process.env.FRONTEND}/playlist?list=${id}`)
     }
 }
 
@@ -33,6 +47,6 @@ exports.searchChannel = async (req, res) => {
     if (id.fail) {
         res.status(500).send(id.message)
     } else {
-        res.send(`<script>window.location.href = '${process.env.FRONTEND}/channel/${id}'</script>`)
+        res.redirect(`${process.env.FRONTEND}/channel/${id}`)
     }
 }
