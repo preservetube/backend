@@ -21,7 +21,7 @@ async function downloadVideo(url, ws) {
         })
 
         child.on("close", async (code, signal) => {
-            if (code == 2) {
+            if (code == 2 || code == 1) {
                 reject({
                     fail: true
                 })
