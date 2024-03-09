@@ -21,7 +21,7 @@ async function downloadVideo(url, ws) {
         })
 
         child.on("close", async (code, signal) => {
-            if (code == 2 || code == 1) {
+            if (code == 2 || code == 1) { // https://github.com/yt-dlp/yt-dlp/issues/4262
                 reject({
                     fail: true
                 })
