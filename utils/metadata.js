@@ -1,5 +1,10 @@
 const fetch = require('node-fetch')
+const https = require('https')
 const maxRetries = 5
+
+const ignoreSsl = new https.Agent({
+    rejectUnauthorized: false,
+})
 
 async function getInstance() {
     const instances = await (await fetch('https://api.invidious.io/instances.json?pretty=1', {
@@ -15,7 +20,8 @@ async function getPipedInstance() {
     const instances = await (await fetch('https://piped-instances.kavin.rocks/', {
         headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; PreserveTube/0.0; +https://preservetube.com)'
-        }
+        },
+        agent: ignoreSsl
     })).json()
     return (instances[Math.floor(Math.random() * instances.length)]).api_url
 }
