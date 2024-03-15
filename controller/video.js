@@ -27,7 +27,8 @@ exports.getVideo = async (req, res) => {
                 channelId: true, 
                 channelAvatar: true,
                 channelVerified: true,
-                disabled: true
+                disabled: true,
+                hasBeenReported: true
             }
         })
         

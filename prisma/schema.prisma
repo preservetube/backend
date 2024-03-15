@@ -25,6 +25,7 @@ model videos {
   channelAvatar   String
   playlist        String?
   disabled        Boolean  @default(false)
+  hasBeenReported Boolean  @default(false)
 
   @@index([title], name: "idx_title")
 }
@@ -32,7 +33,6 @@ model videos {
 model reports {
   uuid      String    @id @default(uuid())
   target    String
-  url       String 
   title     String
   details   String
   date      DateTime  @default(now())

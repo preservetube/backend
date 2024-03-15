@@ -22,22 +22,11 @@ exports.getReports = async (req, res) => {
     res.json(json)
 }
 
-exports.getReport = async (req, res) => {
-    const data = await prisma.reports.findFirst({
+exports.getReports = async (req, res) => {
+    const reports = await prisma.reports.findMany({
         where: {
             target: req.params.id
         }
     })
-
-    if (!data) {
-        res.json({
-            error: '404'
-        })
-    } else {
-        res.json({
-            ...data,
-            details: (data.details).split('<').join('&lt;').split('>').join('&gt;'),
-            date: (data.date).toISOString().slice(0,10)
-        })
-    }
+    res.json(reports)
 }

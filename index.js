@@ -27,7 +27,7 @@ app.get('/search/playlist', searchController.searchPlaylist)
 app.get('/search/channel', searchController.searchChannel)
 
 app.get('/transparency/list', transparencyController.getReports)
-app.get('/transparency/:id', transparencyController.getReport)
+app.get('/transparency/:id', transparencyController.getReports)
 
 app.ws('/save', websocketController.save)
 app.ws('/saveplaylist', websocketController.playlist)
