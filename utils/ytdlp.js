@@ -8,7 +8,7 @@ async function downloadVideo(url, ws, id) {
         const video = await metadata.getVideoMetadata(id)
         if (video.lengthSeconds > 1500) {
             const formats = await getFormats(url, ws)
-            if (!formats.fail && formats.includes('18  mp4')) {
+            if (!formats.fail && formats.includes('360p')) {
                 args.push('-f 18')
             }
         }
