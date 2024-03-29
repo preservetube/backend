@@ -46,7 +46,7 @@ async function downloadVideo(url, ws, id) {
 
 async function getFormats(url, ws) {
     return new Promise((resolve, reject) => {
-        const child = child_process.spawn("../yt-dlp", [url, "-F"], {cwd: 'videos', shell: false})
+        const child = child_process.spawn('../yt-dlp', ['--proxy', 'socks5://gluetun:1080', url, '-F'], {cwd: 'videos', shell: false})
         let outputs = ''
 
         child.stdout.on("data", data => {
