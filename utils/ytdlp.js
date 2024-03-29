@@ -10,8 +10,17 @@ async function downloadVideo(url, ws, id) {
         if (video.lengthSeconds > 1200) quality = '480p' // 20 minutes
         if (video.lengthSeconds > 2100) quality = '360p' // 35 minutes
         const downloadJson = await metadata.getVideoDownload(url, quality)
+        if (downloadJson.status == 'error') {
+            resolve({
+                message: 'Failed to request Youtube. Please retry...',
+                fail: true
+            })
+        }
 
         let size = ''
+        let startTime = Date.now()
+        let prevBytes = 0
+        let speed = 0
         const alreadyPrecentages = []
         const download = wget.download(downloadJson.url, `./videos/${id}.webm`)
         
@@ -23,8 +32,19 @@ async function downloadVideo(url, ws, id) {
         download.on('progress', progress => {
             if (alreadyPrecentages.includes((progress*100).toFixed(0))) return 
             alreadyPrecentages.push((progress*100).toFixed(0))
-            
-            if (ws) ws.send(`DATA - [download] ${(progress*100).toFixed(2)}% of ${hr.fromBytes(size)}`)
+
+            const currentTime = Date.now()
+            const elapsedTime = (currentTime - startTime) / 1000
+            const currentBytes = progress * size
+            const bytesDownloaded = currentBytes - prevBytes
+            speed = bytesDownloaded / elapsedTime 
+            prevBytes = currentBytes
+
+            const speedInMBps = speed / 1048576 
+            const remainingBytes = size - currentBytes
+            const remainingTime = remainingBytes / speed 
+
+            if (ws) ws.send(`DATA - [download] ${(progress*100).toFixed(2)}% of ${hr.fromBytes(size)} at ${speedInMBps.toFixed(2)} MB/s ETA ${secondsToTime(remainingTime.toFixed(0))}`)
         })
 
         download.on('error', err => {
@@ -38,12 +58,19 @@ async function downloadVideo(url, ws, id) {
                     fail: false
                 })
             } else {
-                reject({
+                resolve({
                     fail: true
                 })
             }
         })
     })
+}
+
+function secondsToTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    const formattedSeconds = remainingSeconds < 10 ? '0' + remainingSeconds : remainingSeconds;
+    return `${minutes}:${formattedSeconds}`;
 }
 
 module.exports = { downloadVideo }
