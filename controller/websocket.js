@@ -73,7 +73,7 @@ exports.save = async (ws, req) => {
     async function startDownloading() {
         ws.send('INFO - Spawning yt-dlp!')
 
-        const download = await ytdlp.downloadVideo(`https://www.youtube.com/watch?v=${id}`, ws)
+        const download = await ytdlp.downloadVideo(`https://www.youtube.com/watch?v=${id}`, ws, id)
         if (download.fail) {
             await redis.del(id)
             ws.send(`DATA - ${download.message}`)
@@ -170,7 +170,7 @@ exports.playlist = async (ws, req) => {
             ws.send(`INFO - Downloading ${video.title}<br><br>`)
             await redis.set(id, 'downloading')
 
-            const download = await ytdlp.downloadVideo('https://www.youtube.com' + video.url, ws)
+            const download = await ytdlp.downloadVideo('https://www.youtube.com' + video.url, ws, id)
             if (download.fail) {
                 ws.send(`DATA - ${download.message}`)
                 await redis.del(id)
@@ -269,7 +269,7 @@ exports.channel = async (ws, req) => {
             ws.send(`INFO - Downloading ${video.title}<br><br>`)
             await redis.set(id, 'downloading')
 
-            const download = await ytdlp.downloadVideo('https://www.youtube.com' + video.url, ws)
+            const download = await ytdlp.downloadVideo('https://www.youtube.com' + video.url, ws, id)
             if (download.fail) {
                 ws.send(`DATA - ${download.message}`)
                 await redis.del(id)

@@ -30,7 +30,7 @@ async function getVideoMetadata(id) {
     for (let retries = 0; retries < maxRetries; retries++) {
         try {
             const instance = await getInstance()
-            const response = await fetch(`${instance}/api/v1/videos/${id}?fields=videoId,title,descriptionHtml,videoThumbnails,published,authorId,error&pretty=1`, {
+            const response = await fetch(`${instance}/api/v1/videos/${id}?fields=videoId,title,descriptionHtml,videoThumbnails,published,authorId,lengthSeconds,error&pretty=1`, {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (compatible; PreserveTube/0.0; +https://preservetube.com)'
                 }
