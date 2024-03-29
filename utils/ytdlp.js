@@ -13,9 +13,7 @@ async function downloadVideo(url, ws, id) {
 
         let size = ''
         const alreadyPrecentages = []
-        const download = wget.download(downloadJson.url, `./videos/${id}.webm`, {
-            proxy: 'socks5://gluetun:1080'
-        })
+        const download = wget.download(downloadJson.url, `./videos/${id}.webm`)
         
         download.on('start', fileSize => {
             size = fileSize
