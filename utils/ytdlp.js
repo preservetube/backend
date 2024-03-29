@@ -1,75 +1,46 @@
-const child_process = require('child_process')
+const wget = require('wget-improved')
 const DOMPurify = require('isomorphic-dompurify')
 const metadata = require('./metadata.js')
+const hr = require('@tsmx/human-readable')
 
 async function downloadVideo(url, ws, id) {
     return new Promise(async (resolve, reject) => {
-        const args = ['--proxy', 'socks5://gluetun:1080', url]
+        let quality = '720p'
         const video = await metadata.getVideoMetadata(id)
-        if (video.lengthSeconds > 1500) {
-            const formats = await getFormats(url, ws)
-            if (!formats.fail && formats.includes('360p')) {
-                args.push('-f 18')
-            }
-        }
+        if (video.lengthSeconds > 1200) quality = '480p' // 20 minutes
+        if (video.lengthSeconds > 2100) quality = '360p' // 35 minutes
+        const downloadJson = await metadata.getVideoDownload(url, quality)
 
-        const child = child_process.spawn('../yt-dlp', args, {cwd: 'videos', shell: false})
-        // https://github.com/yt-dlp/yt-dlp/blob/cc8d8441524ec3442d7c0d3f8f33f15b66aa06f3/README.md?plain=1#L1500
+        let size = ''
+        const alreadyPrecentages = []
+        const download = wget.download(downloadJson.url, `./videos/${id}.webm`)
         
-        child.stdout.on("data", data => {
-            const msg = data.toString().trim()
-            if (!msg) return 
-    
-            if (ws) ws.send(`DATA - ${DOMPurify.sanitize(msg)}`)
+        download.on('start', fileSize => {
+            size = fileSize
+            if (ws) ws.send(`DATA - Download has started in ${quality}`)
         })
 
-        child.stderr.on("data", data => {
-            const msg = data.toString().trim()
-            if (!msg) return 
-    
-            if (ws) ws.send(`DATA - ${DOMPurify.sanitize(msg)}`)
+        download.on('progress', progress => {
+            if (alreadyPrecentages.includes((progress*100).toFixed(0))) return 
+            alreadyPrecentages.push((progress*100).toFixed(0))
+            
+            if (ws) ws.send(`DATA - [download] ${(progress*100).toFixed(2)}% of ${hr.fromBytes(size)}`)
         })
 
-        child.on("close", async (code, signal) => {
-            if (code == 2 || code == 1) { // https://github.com/yt-dlp/yt-dlp/issues/4262
-                reject({
-                    fail: true
-                })
-            } else {
+        download.on('error', err => {
+            if (ws) ws.send(`DATA - ${DOMPurify.sanitize(err)}`)
+        })
+
+        download.on('end', output => {
+            if (output == 'Finished writing to disk') {
+                ws.send(`DATA - Download has finished`)
                 resolve({
                     fail: false
                 })
-            }
-        })
-    })
-}
-
-async function getFormats(url, ws) {
-    return new Promise((resolve, reject) => {
-        const child = child_process.spawn('../yt-dlp', ['--proxy', 'socks5://gluetun:1080', url, '-F'], {cwd: 'videos', shell: false})
-        let outputs = ''
-
-        child.stdout.on("data", data => {
-            const msg = data.toString().trim()
-            if (!msg) return 
-            
-            outputs = outputs + msg
-        })
-
-        child.stderr.on("data", data => {
-            const msg = data.toString().trim()
-            if (!msg) return 
-    
-            if (ws) ws.send(`DATA - ${DOMPurify.sanitize(msg)}`)
-        })
-
-        child.on("close", async (code, signal) => {
-            if (code == 2 || code == 1) { // https://github.com/yt-dlp/yt-dlp/issues/4262
+            } else {
                 reject({
                     fail: true
                 })
-            } else {
-                resolve(outputs)
             }
         })
     })

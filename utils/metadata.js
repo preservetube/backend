@@ -117,4 +117,20 @@ async function getPlaylistVideos(id) {
     return json
 }
 
-module.exports = { getInstance, getVideoMetadata, getChannel, getChannelVideos, getPlaylistVideos }
+async function getVideoDownload(url, quality) {
+    const json = await (await fetch('http://cobalt-api:9000/api/json', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            'url': url,
+            'vQuality': quality
+        })
+    })).json()
+
+    return json
+}
+
+module.exports = { getInstance, getVideoMetadata, getChannel, getChannelVideos, getPlaylistVideos, getVideoDownload }

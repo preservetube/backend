@@ -71,8 +71,6 @@ exports.save = async (ws, req) => {
     })
 
     async function startDownloading() {
-        ws.send('INFO - Spawning yt-dlp!')
-
         const download = await ytdlp.downloadVideo(`https://www.youtube.com/watch?v=${id}`, ws, id)
         if (download.fail) {
             await redis.del(id)
@@ -80,9 +78,7 @@ exports.save = async (ws, req) => {
             ws.close()
         } else {
             const file = fs.readdirSync("videos").find(f => f.includes(id))
-            if (file) {
-                fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
-    
+            if (file) {    
                 ws.send('DATA - Uploading file...')
                 const videoUrl = await upload.uploadVideo(`./videos/${id}.webm`)
                 fs.unlinkSync(`./videos/${id}.webm`)
@@ -179,7 +175,6 @@ exports.playlist = async (ws, req) => {
                 const file = fs.readdirSync("./videos").find(f => f.includes(id))
                 if (file) {
                     try {
-                        fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
                         ws.send(`DATA - Downloaded ${video.title}`)
                         ws.send(`DATA - Uploading ${video.title}`)
 
@@ -278,7 +273,6 @@ exports.channel = async (ws, req) => {
                 const file = fs.readdirSync("./videos").find(f => f.includes(id))
                 if (file) {
                     try {
-                        fs.renameSync(`./videos/${file}`, `./videos/${id}.webm`)
                         ws.send(`DATA - Downloaded ${video.title}`)
                         ws.send(`DATA - Uploading ${video.title}`)
 
