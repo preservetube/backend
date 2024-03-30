@@ -32,7 +32,7 @@ async function downloadVideo(url, ws, id) {
         
         download.on('start', fileSize => {
             size = fileSize
-            if (ws) ws.send(`DATA - Download has started in ${quality}`)
+            if (ws) ws.send(`DATA - Download has started in ${quality}p`)
         })
 
         download.on('progress', progress => {
