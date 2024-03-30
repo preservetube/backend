@@ -1,7 +1,9 @@
 const { Innertube } = require('youtubei.js');
 const fetch = require('node-fetch')
 const https = require('https')
+
 const maxRetries = 5
+const platforms = ['WEB', 'ANDROID', 'iOS']
 
 const ignoreSsl = new https.Agent({
     rejectUnauthorized: false,
@@ -28,36 +30,56 @@ async function getPipedInstance() {
 }
 
 async function getVideoMetadata(id) {
+    let error = ''
+
     for (let retries = 0; retries < maxRetries; retries++) {
         try {
+            const platform = platforms[retries % platforms.length];
+            console.log(platform)
             const yt = await Innertube.create();
-            const info = await yt.getInfo(id, 'WEB');
+            const info = await yt.getInfo(id, platform);
 
-            if (!info) return { error: 'ErrorCantConnectToServiceAPI' }; // stolen from cobalt :)
-            if (info.playability_status.status !== 'OK') return { error: 'ErrorYTUnavailable' };
-            if (info.basic_info.is_live) return { error: 'ErrorLiveVideo' };
+            if (!info) {
+                error = 'ErrorCantConnectToServiceAPI'
+                continue; 
+            }
+            if (info.playability_status.status !== 'OK') {
+                error = 'ErrorYTUnavailable'
+                continue; 
+            }
+            if (info.basic_info.is_live) {
+                error = 'ErrorLiveVideo'
+                continue;
+            }
             return info
         } catch (error) {
             continue
         }
     }
 
-    return false
+    return { error: error || 'ErrorUnknown' }
 }
 
 async function getChannel(id) {
+    let error = ''
+
     for (let retries = 0; retries < maxRetries; retries++) {
         try {
+            const platform = platforms[retries % platforms.length];
             const yt = await Innertube.create();
-            const info = await yt.getChannel(id, 'WEB');
-            if (!info) return { error: 'ErrorCantConnectToServiceAPI' }; // stolen from cobalt :)
+            const info = await yt.getChannel(id, platform);
+
+            if (!info) {
+                error = 'ErrorCantConnectToServiceAPI'
+                continue; 
+            }
             return info
         } catch (error) {
             continue
         }
     }
 
-    return false
+    return { error: error || 'ErrorUnknown' }
 }
 
 async function getChannelVideos(id) {
