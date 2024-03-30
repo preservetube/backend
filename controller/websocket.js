@@ -127,7 +127,7 @@ exports.playlist = async (ws, req) => {
 
     async function startDownloading() {
         const playlist = await metadata.getPlaylistVideos(playlistId)
-        for (video of playlist.relatedStreams) {
+        for (video of playlist.relatedStreams.slice(0, 5)) {
             if (ws.readyState !== ws.OPEN) {
                 return logger.info({ message: `Stopped downloading ${playlistId}, websocket is closed` })
             }
@@ -233,7 +233,7 @@ exports.channel = async (ws, req) => {
     async function startDownloading() {
         const videos = await metadata.getChannelVideos(channelId)
 
-        for (video of videos) {
+        for (video of videos.slice(0, 5)) {
             if (ws.readyState !== ws.OPEN) {
                 return logger.info({ message: `Stopped downloading ${channelId}, websocket is closed` })
             }
