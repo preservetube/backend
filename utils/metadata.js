@@ -35,7 +35,6 @@ async function getVideoMetadata(id) {
     for (let retries = 0; retries < maxRetries; retries++) {
         try {
             const platform = platforms[retries % platforms.length];
-            console.log(platform)
             const yt = await Innertube.create();
             const info = await yt.getInfo(id, platform);
 
