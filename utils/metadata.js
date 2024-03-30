@@ -3,7 +3,6 @@ const fetch = require('node-fetch')
 
 const maxRetries = 5
 const platforms = ['WEB', 'ANDROID', 'iOS']
-const cobalt = ['http://cobalt-api:9000', 'https://co.wuk.sh', 'http://cobalt-api:9000']
 
 async function getPipedInstance() {
     const instances = await (await fetch('https://piped-instances.kavin.rocks/', {
@@ -109,8 +108,7 @@ async function getVideoDownload(url, quality) {
 
     for (let retries = 0; retries < maxRetries; retries++) {
         try {
-            const instance = cobalt[retries % cobalt.length];
-            json = await (await fetch(`${instance}/api/json`, {
+            json = await (await fetch('http://cobalt-api:9000/api/json', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
