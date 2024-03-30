@@ -18,6 +18,7 @@
     "ioredis": "^5.3.1",
     "isomorphic-dompurify": "^1.0.0",
     "node-fetch": "2",
+    "readable-to-ms": "^1.0.3",
     "rolling-rate-limiter": "^0.4.2",
     "wget-improved": "^3.4.0",
     "winston": "^3.8.2",

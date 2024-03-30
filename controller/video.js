@@ -2,6 +2,7 @@ const { PrismaClient } =  require('@prisma/client')
 const prisma = new PrismaClient()
 
 const DOMPurify = require('isomorphic-dompurify')
+const rtm = require('readable-to-ms')
 const metadata = require('../utils/metadata.js')
 const redis = require('../utils/redis.js')
 
@@ -68,12 +69,16 @@ exports.getChannel = async (req, res) => {
         }
     })
 
-    const processedVideos = videos.map(video => ({
-        id: video.url.replace('/watch?v=', ''),
-        published: new Date(video.uploaded).toISOString().slice(0, 10),
-        ...video
-    }));
-    
+    const processedVideos = videos.map(video => {
+        const date = !isNaN(new Date(video.published.text).getTime()) ? new Date(video.published.text) : new Date((new Date()).getTime() - rtm(video.published.text).ms); // life is great.
+        return {
+            id: video.id,
+            title: video.title.text,
+            thumbnail: video.thumbnails[0].url,
+            published: new Date(date).toISOString().slice(0, 10)
+        }
+    });
+
     archived.forEach(v => {
         const existingVideoIndex = processedVideos.findIndex(video => video.id === v.id);
         if (existingVideoIndex !== -1) {

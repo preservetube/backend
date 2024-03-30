@@ -1,6 +1,7 @@
 const fs = require('node:fs')
 const crypto = require('node:crypto')
 const { RedisRateLimiter } = require('rolling-rate-limiter')
+const rtm = require('readable-to-ms')
 
 const upload = require('../utils/upload.js')
 const ytdlp = require('../utils/ytdlp.js')
@@ -233,64 +234,62 @@ exports.channel = async (ws, req) => {
     async function startDownloading() {
         const videos = await metadata.getChannelVideos(channelId)
 
-        for (video of videos.slice(0, 5)) {
+        for (const video of videos.slice(0, 5)) {
             if (ws.readyState !== ws.OPEN) {
                 return logger.info({ message: `Stopped downloading ${channelId}, websocket is closed` })
             }
 
-            const id = video.url.match(/[?&]v=([^&]+)/)[1]
-
             const already = await prisma.videos.findFirst({
                 where: {
-                    id: id
+                    id: video.id
                 }
             })
 
             if (already) {
-                ws.send(`DATA - Already downloaded ${video.title}`)
+                ws.send(`DATA - Already downloaded ${video.title.text}`)
                 continue
             }
 
-            if (await redis.get(id)) {
-                ws.send(`DATA - Someone is already downloading ${video.title}, skipping.`)
+            if (await redis.get(video.id)) {
+                ws.send(`DATA - Someone is already downloading ${video.title.text}, skipping.`)
                 continue
             }
 
-            if (await redis.get(`blacklist:${id}`)) {
-                ws.send(`DATA - ${video.title} is blacklisted from downloading, skipping`)
+            if (await redis.get(`blacklist:${video.id}`)) {
+                ws.send(`DATA - ${video.title.text} is blacklisted from downloading, skipping`)
                 continue
             }
             
-            ws.send(`INFO - Downloading ${video.title}<br><br>`)
-            await redis.set(id, 'downloading')
+            ws.send(`INFO - Downloading ${video.title.text}<br><br>`)
+            await redis.set(video.id, 'downloading')
 
-            const download = await ytdlp.downloadVideo('https://www.youtube.com' + video.url, ws, id)
+            const download = await ytdlp.downloadVideo(`https://www.youtube.com/watch?v=${video.id}`, ws, video.id)
             if (download.fail) {
                 ws.send(`DATA - ${download.message}`)
-                await redis.del(id)
+                await redis.del(video.id)
                 continue
             } else {
-                const file = fs.readdirSync("./videos").find(f => f.includes(id))
+                const file = fs.readdirSync("./videos").find(f => f.includes(video.id))
                 if (file) {
                     try {
-                        ws.send(`DATA - Downloaded ${video.title}`)
-                        ws.send(`DATA - Uploading ${video.title}`)
+                        ws.send(`DATA - Downloaded ${video.title.text}`)
+                        ws.send(`DATA - Uploading ${video.title.text}`)
 
-                        const videoUrl = await upload.uploadVideo(`./videos/${id}.mp4`)
-                        ws.send(`DATA - Uploaded ${video.title}`)
-                        fs.unlinkSync(`./videos/${id}.mp4`)
+                        const videoUrl = await upload.uploadVideo(`./videos/${video.id}.mp4`)
+                        ws.send(`DATA - Uploaded ${video.title.text}`)
+                        fs.unlinkSync(`./videos/${video.id}.mp4`)
 
-                        await websocket.createDatabaseVideo(id, videoUrl)
-                        ws.send(`DATA - Created video page for ${video.title}`)
+                        await websocket.createDatabaseVideo(video.id, videoUrl)
+                        ws.send(`DATA - Created video page for ${video.title.text}`)
                     } catch (e) {
-                        ws.send(`DATA - Failed downloading video ${video.title}. Going to next video`)
+                        ws.send(`DATA - Failed downloading video ${video.title.text}. Going to next video`)
                         logger.error(e)
                     }
                 } else {
-                    ws.send(`DATA - Failed to find file for ${video.title}. Going to next video`)
+                    ws.send(`DATA - Failed to find file for ${video.title.text}. Going to next video`)
                 }
 
-                await redis.del(id)
+                await redis.del(video.id)
             }
         }
 

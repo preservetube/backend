@@ -1,31 +1,15 @@
 const { Innertube } = require('youtubei.js');
 const fetch = require('node-fetch')
-const https = require('https')
 
 const maxRetries = 5
 const platforms = ['WEB', 'ANDROID', 'iOS']
 const cobalt = ['http://cobalt-api:9000', 'https://co.wuk.sh', 'http://cobalt-api:9000']
 
-const ignoreSsl = new https.Agent({
-    rejectUnauthorized: false,
-})
-
-async function getInstance() {
-    const instances = await (await fetch('https://api.invidious.io/instances.json?pretty=1', {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; PreserveTube/0.0; +https://preservetube.com)'
-        }
-    })).json()
-    const sorted = instances.filter(o => o[1].type == 'https' && o[0] != 'invidious.io.lol' && o[0] != 'invidious.0011.lt')
-    return `https://${sorted[Math.floor(Math.random() * sorted.length)][0]}`
-}
-
 async function getPipedInstance() {
     const instances = await (await fetch('https://piped-instances.kavin.rocks/', {
         headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; PreserveTube/0.0; +https://preservetube.com)'
-        },
-        agent: ignoreSsl
+        }
     })).json()
     return (instances[Math.floor(Math.random() * instances.length)]).api_url
 }
@@ -85,34 +69,29 @@ async function getChannel(id) {
 async function getChannelVideos(id) {
     return new Promise(async (resolve, reject) => {
         try {
-            const videos = []
-            const instance = await getPipedInstance()
-            const json = await (await fetch(`${instance}/channel/${id}`, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (compatible; PreserveTube/0.0; +https://preservetube.com)'
-                }
-            })).json()
-            videos.push(...json.relatedStreams)
-            if (json.nextpage) await getNextPage(json.nextpage)
-            else resolve(videos)
-            
-            async function getNextPage(payload) {
-                const page = await (await fetch(`${instance}/nextpage/channel/${id}?nextpage=${encodeURIComponent(payload)}`, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (compatible; PreserveTube/0.0; +https://preservetube.com)'
-                    }
-                })).json()
-                videos.push(...page.relatedStreams)
-
-                if (videos.length >= 60) return resolve(videos)
-                if (page.nextpage) await getNextPage(page.nextpage)
-                else return resolve(videos)
+            const videos = [];
+            const yt = await Innertube.create();
+            const channel = await yt.getChannel(id);
+            let json = await channel.getVideos();
+    
+            videos.push(...json.videos);
+    
+            while (json.has_continuation && videos.length < 60) {
+                json = await getNextPage(json);
+                videos.push(...json.videos);
             }
-
+    
+            resolve(videos);
+            
         } catch (e) {
-            resolve(false)
+            resolve(false);
         }
-    })
+    });
+    
+    async function getNextPage(json) {
+        const page = await json.getContinuation();
+        return page;
+    }
 }
 
 async function getPlaylistVideos(id) {
@@ -153,4 +132,4 @@ async function getVideoDownload(url, quality) {
     return json
 }
 
-module.exports = { getInstance, getVideoMetadata, getChannel, getChannelVideos, getPlaylistVideos, getVideoDownload }
+module.exports = { getVideoMetadata, getChannel, getChannelVideos, getPlaylistVideos, getVideoDownload }

@@ -1067,6 +1067,11 @@ readable-stream@^3.4.0, readable-stream@^3.6.0:
     string_decoder "^1.1.1"
     util-deprecate "^1.0.1"
 
+readable-to-ms@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/readable-to-ms/-/readable-to-ms-1.0.3.tgz#7a1bc1cdf15a13e0808d488c160ea723fd04e60f"
+  integrity sha512-xxxnoflc1CT6st5azNw5u8m739XkrqrkYgLGTe9noe2OG5ohxz3viFQoOSXN2qdckf79da353uBPHQrsjPuYdQ==
+
 redis-errors@^1.0.0, redis-errors@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/redis-errors/-/redis-errors-1.2.0.tgz#eb62d2adb15e4eaf4610c04afe1529384250abad"
