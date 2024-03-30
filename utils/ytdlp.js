@@ -8,17 +8,16 @@ async function downloadVideo(url, ws, id) {
         let quality = '720p'
         const video = await metadata.getVideoMetadata(id)
         if (video.error) {
-            resolve({
+            return resolve({
                 message: `Failed to request Youtube with error ${video.error}. Please retry...`,
                 fail: true
             })
         }
+        if (video.basic_info.duration >= 900) quality = '360p' // 15 minutes
 
-        if (video.basic_info.duration > 1200) quality = '480p' // 20 minutes
-        if (video.basic_info.duration > 2100) quality = '360p' // 35 minutes
         const downloadJson = await metadata.getVideoDownload(url, quality)
         if (downloadJson.status == 'error') {
-            resolve({
+            return resolve({
                 message: 'Failed to request Youtube. Please retry...',
                 fail: true
             })
@@ -61,11 +60,11 @@ async function downloadVideo(url, ws, id) {
         download.on('end', output => {
             if (output == 'Finished writing to disk') {
                 ws.send(`DATA - Download has finished`)
-                resolve({
+                return resolve({
                     fail: false
                 })
             } else {
-                resolve({
+                return resolve({
                     fail: true
                 })
             }

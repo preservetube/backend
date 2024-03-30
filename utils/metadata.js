@@ -4,6 +4,7 @@ const https = require('https')
 
 const maxRetries = 5
 const platforms = ['WEB', 'ANDROID', 'iOS']
+const cobalt = ['http://cobalt-api:9000', 'https://co.wuk.sh', 'http://cobalt-api:9000']
 
 const ignoreSsl = new https.Agent({
     rejectUnauthorized: false,
@@ -125,17 +126,29 @@ async function getPlaylistVideos(id) {
 }
 
 async function getVideoDownload(url, quality) {
-    const json = await (await fetch('http://cobalt-api:9000/api/json', {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            'url': url,
-            'vQuality': quality
-        })
-    })).json()
+    let json 
+
+    for (let retries = 0; retries < maxRetries; retries++) {
+        try {
+            const instance = cobalt[retries % cobalt.length];
+            json = await (await fetch(`${instance}/api/json`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    'url': url,
+                    'vQuality': quality
+                })
+            })).json()
+
+            if (json.error) continue
+            return json
+        } catch (error) {
+            continue
+        }
+    }
 
     return json
 }
