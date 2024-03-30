@@ -122,7 +122,10 @@ async function getPlaylistVideos(id) {
             'User-Agent': 'Mozilla/5.0 (compatible; PreserveTube/0.0; +https://preservetube.com)'
         }
     })).json()
-    return json
+    return {
+        ...json,
+        relatedStreams: json.relatedStreams.slice(0, 5)
+    }
 }
 
 async function getVideoDownload(url, quality) {
