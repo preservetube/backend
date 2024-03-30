@@ -1,3 +1,4 @@
+const { Innertube } = require('youtubei.js');
 const fetch = require('node-fetch')
 const https = require('https')
 const maxRetries = 5
@@ -29,19 +30,13 @@ async function getPipedInstance() {
 async function getVideoMetadata(id) {
     for (let retries = 0; retries < maxRetries; retries++) {
         try {
-            const instance = await getInstance()
-            const response = await fetch(`${instance}/api/v1/videos/${id}?fields=videoId,title,descriptionHtml,videoThumbnails,published,authorId,lengthSeconds,error&pretty=1`, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (compatible; PreserveTube/0.0; +https://preservetube.com)'
-                }
-            })
-            
-            if (response.ok) {
-                const json = await response.json()
-                return json
-            } else {
-                continue
-            }
+            const yt = await Innertube.create();
+            const info = await yt.getInfo(id, 'WEB');
+
+            if (!info) return { error: 'ErrorCantConnectToServiceAPI' }; // stolen from cobalt :)
+            if (info.playability_status.status !== 'OK') return { error: 'ErrorYTUnavailable' };
+            if (info.basic_info.is_live) return { error: 'ErrorLiveVideo' };
+            return info
         } catch (error) {
             continue
         }
@@ -53,19 +48,10 @@ async function getVideoMetadata(id) {
 async function getChannel(id) {
     for (let retries = 0; retries < maxRetries; retries++) {
         try {
-            const instance = await getInstance()
-            const response = await fetch(`${instance}/api/v1/channels/${id}?pretty=1`, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (compatible; PreserveTube/0.0; +https://preservetube.com)'
-                }
-            })
-
-            if (response.ok) {
-                const json = await response.json()
-                return json
-            } else {
-                continue
-            }
+            const yt = await Innertube.create();
+            const info = await yt.getChannel(id, 'WEB');
+            if (!info) return { error: 'ErrorCantConnectToServiceAPI' }; // stolen from cobalt :)
+            return info
         } catch (error) {
             continue
         }

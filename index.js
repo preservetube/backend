@@ -36,6 +36,7 @@ app.get('/autodownload', websocketController.addAutodownload)
 
 process.on('uncaughtException', err => {
   logger.error(err)
+  console.log(err)
 })
 
 app.listen(1337, () => {

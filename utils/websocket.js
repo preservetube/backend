@@ -6,24 +6,27 @@ const upload = require('./upload.js')
 
 async function createDatabaseVideo(id, videoUrl, playlistId) {
     const data = await metadata.getVideoMetadata(id)
-    const channelData = await metadata.getChannel(data.authorId)
+    const channelData = await metadata.getChannel(data.basic_info.channel_id)
 
-    const uploaderAvatar = await upload.uploadImage(data.authorId, channelData.authorThumbnails[1].url)
-    const thumbnailUrl = await upload.uploadImage(id, data.videoThumbnails[0].url)
+    if (data.error) return data
+    if (channelData.error) return channelData
+
+    const uploaderAvatar = await upload.uploadImage(data.basic_info.channel_id, channelData.metadata.thumbnail[0].url)
+    const thumbnailUrl = await upload.uploadImage(id, data.basic_info.thumbnail[0].url)
     
     await prisma.videos.create({
         data: {
             id: id,
-            title: data.title,
-            description: (data.descriptionHtml).replaceAll('\n', '<br>'),
+            title: data.basic_info.title,
+            description: (data.basic_info.short_description).replaceAll('\n', '<br>'),
             thumbnail: thumbnailUrl,
             source: videoUrl,
-            published: (new Date(data.published*1000)).toISOString().slice(0,10),
+            published: (new Date(data.primary_info.published.text)).toISOString().slice(0,10),
             archived: (new Date()).toISOString().slice(0,10),
-            channel: channelData.author,
-            channelId: channelData.authorId,
+            channel: channelData.metadata.title,
+            channelId: channelData.metadata.external_id,
             channelAvatar: uploaderAvatar,
-            channelVerified: channelData.authorVerified,
+            channelVerified: channelData.header.author.is_verified,
             playlist: playlistId
         }
     })

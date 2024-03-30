@@ -7,8 +7,15 @@ async function downloadVideo(url, ws, id) {
     return new Promise(async (resolve, reject) => {
         let quality = '720p'
         const video = await metadata.getVideoMetadata(id)
-        if (video.lengthSeconds > 1200) quality = '480p' // 20 minutes
-        if (video.lengthSeconds > 2100) quality = '360p' // 35 minutes
+        if (video.error) {
+            resolve({
+                message: `Failed to request Youtube with error ${video.error}. Please retry...`,
+                fail: true
+            })
+        }
+
+        if (video.basic_info.duration > 1200) quality = '480p' // 20 minutes
+        if (video.basic_info.duration > 2100) quality = '360p' // 35 minutes
         const downloadJson = await metadata.getVideoDownload(url, quality)
         if (downloadJson.status == 'error') {
             resolve({

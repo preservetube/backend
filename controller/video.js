@@ -51,7 +51,7 @@ exports.getChannel = async (req, res) => {
         metadata.getChannel(req.params.id)
     ])
 
-    if (!videos || !channel || videos.error) {
+    if (!videos || !channel || videos.error || channel.error) {
         return res.json({ error: '404' });
     }
 
@@ -86,9 +86,9 @@ exports.getChannel = async (req, res) => {
     processedVideos.sort((a, b) => new Date(b.published) - new Date(a.published));
     
     const json = {
-        name: channel.author,
-        avatar: channel.authorThumbnails[1].url,
-        verified: channel.authorVerified,
+        name: channel.metadata.title,
+        avatar: channel.metadata.avatar[0].url,
+        verified: channel.header.author.is_verified,
         videos: processedVideos
     }
     await redis.set(`channel:${req.params.id}`, JSON.stringify(json), 'EX', 3600)
