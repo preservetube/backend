@@ -80,8 +80,8 @@ exports.save = async (ws, req) => {
             const file = fs.readdirSync("videos").find(f => f.includes(id))
             if (file) {    
                 ws.send('DATA - Uploading file...')
-                const videoUrl = await upload.uploadVideo(`./videos/${id}.webm`)
-                fs.unlinkSync(`./videos/${id}.webm`)
+                const videoUrl = await upload.uploadVideo(`./videos/${id}.mp4`)
+                fs.unlinkSync(`./videos/${id}.mp4`)
 
                 await websocket.createDatabaseVideo(id, videoUrl)
 
@@ -178,9 +178,9 @@ exports.playlist = async (ws, req) => {
                         ws.send(`DATA - Downloaded ${video.title}`)
                         ws.send(`DATA - Uploading ${video.title}`)
 
-                        const videoUrl = await upload.uploadVideo(`./videos/${id}.webm`)
+                        const videoUrl = await upload.uploadVideo(`./videos/${id}.mp4`)
                         ws.send(`DATA - Uploaded ${video.title}`)
-                        fs.unlinkSync(`./videos/${id}.webm`)
+                        fs.unlinkSync(`./videos/${id}.mp4`)
 
                         await websocket.createDatabaseVideo(id, videoUrl, playlistId)
                         ws.send(`DATA - Created video page for ${video.title}`)
@@ -276,9 +276,9 @@ exports.channel = async (ws, req) => {
                         ws.send(`DATA - Downloaded ${video.title}`)
                         ws.send(`DATA - Uploading ${video.title}`)
 
-                        const videoUrl = await upload.uploadVideo(`./videos/${id}.webm`)
+                        const videoUrl = await upload.uploadVideo(`./videos/${id}.mp4`)
                         ws.send(`DATA - Uploaded ${video.title}`)
-                        fs.unlinkSync(`./videos/${id}.webm`)
+                        fs.unlinkSync(`./videos/${id}.mp4`)
 
                         await websocket.createDatabaseVideo(id, videoUrl)
                         ws.send(`DATA - Created video page for ${video.title}`)

@@ -28,7 +28,7 @@ async function downloadVideo(url, ws, id) {
         let prevBytes = 0
         let speed = 0
         const alreadyPrecentages = []
-        const download = wget.download(downloadJson.url, `./videos/${id}.webm`)
+        const download = wget.download(downloadJson.url, `./videos/${id}.mp4`)
         
         download.on('start', fileSize => {
             size = fileSize

@@ -18,7 +18,7 @@ async function uploadVideo(video) {
     Bucket: key.bucket,
     Key: video.split('/')[2],
     Body: videoFile,
-    ContentType: 'video/webm',
+    ContentType: 'video/mp4',
   }).promise()
 
   return uploaded.Location
