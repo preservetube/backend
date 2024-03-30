@@ -5,7 +5,7 @@ const hr = require('@tsmx/human-readable')
 
 async function downloadVideo(url, ws, id) {
     return new Promise(async (resolve, reject) => {
-        let quality = '720p'
+        let quality = '720'
         const video = await metadata.getVideoMetadata(id)
         if (video.error) {
             return resolve({
@@ -13,7 +13,7 @@ async function downloadVideo(url, ws, id) {
                 fail: true
             })
         }
-        if (video.basic_info.duration >= 900) quality = '360p' // 15 minutes
+        if (video.basic_info.duration >= 900) quality = '360' // 15 minutes
 
         const downloadJson = await metadata.getVideoDownload(url, quality)
         if (downloadJson.status == 'error') {
