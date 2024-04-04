@@ -108,7 +108,7 @@ async function getVideoDownload(url, quality) {
 
     for (let retries = 0; retries < maxRetries; retries++) {
         try {
-            json = await (await fetch('http://cobalt-api:9000/api/json', {
+            json = await (await fetch('http://gluetun:9000/api/json', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
