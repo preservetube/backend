@@ -2,9 +2,8 @@ const { Innertube } = require('youtubei.js');
 const fetch = require('node-fetch')
 
 const maxRetries = 5
-const platforms = ['WEB', 'iOS', 'YTMUSIC_ANDROID', 'YTMUSIC', 'TV_EMBEDDED']
+const platforms = ['YTSTUDIO_ANDROID', 'WEB', 'iOS', 'YTMUSIC_ANDROID', 'YTMUSIC', 'TV_EMBEDDED']
 
-getVideoMetadata('WMGJQ7t2Uo8').then(o => console.log(o))
 async function getPipedInstance() {
     const instances = await (await fetch('https://piped-instances.kavin.rocks/', {
         headers: {
