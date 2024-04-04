@@ -2,7 +2,7 @@ const { Innertube } = require('youtubei.js');
 const fetch = require('node-fetch')
 
 const maxRetries = 5
-const platforms = ['ANDROID', 'iOS', 'WEB']
+const platforms = ['YTSTUDIO_ANDROID', 'iOS', 'WEB']
 
 async function getPipedInstance() {
     const instances = await (await fetch('https://piped-instances.kavin.rocks/', {
@@ -32,6 +32,10 @@ async function getVideoMetadata(id) {
             }
             if (info.basic_info.is_live) {
                 error = 'ErrorLiveVideo'
+                continue;
+            }
+            if (info.basic_info.title == 'Video Not Available') {
+                error = 'YoutubeIsFuckingWithMe'
                 continue;
             }
             return info
