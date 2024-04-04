@@ -1,8 +1,5 @@
-const { Innertube } = require('youtubei.js');
 const fetch = require('node-fetch')
-
 const maxRetries = 5
-const platforms = ['YTSTUDIO_ANDROID', 'WEB', 'iOS', 'YTMUSIC_ANDROID', 'YTMUSIC', 'TV_EMBEDDED']
 
 async function getPipedInstance() {
     const instances = await (await fetch('https://piped-instances.kavin.rocks/', {
@@ -14,87 +11,15 @@ async function getPipedInstance() {
 }
 
 async function getVideoMetadata(id) {
-    let error = ''
-
-    for (let retries = 0; retries < maxRetries; retries++) {
-        try {
-            const platform = platforms[retries % platforms.length];
-            const yt = await Innertube.create();
-            const info = await yt.getInfo(id, platform);
-
-            if (!info) {
-                error = 'ErrorCantConnectToServiceAPI'
-                continue; 
-            }
-            if (info.playability_status.status !== 'OK') {
-                error = 'ErrorYTUnavailable'
-                continue; 
-            }
-            if (info.basic_info.is_live) {
-                error = 'ErrorLiveVideo'
-                continue;
-            }
-            if (info.basic_info.title == 'Video Not Available') {
-                error = 'YoutubeIsFuckingWithMe'
-                continue;
-            }
-            return info
-        } catch (error) {
-            continue
-        }
-    }
-
-    return { error: error || 'ErrorUnknown' }
+    return await (await fetch(`${process.env.METADATA}/video/${id}`)).json()
 }
 
 async function getChannel(id) {
-    let error = ''
-
-    for (let retries = 0; retries < maxRetries; retries++) {
-        try {
-            const platform = platforms[retries % platforms.length];
-            const yt = await Innertube.create();
-            const info = await yt.getChannel(id, platform);
-
-            if (!info) {
-                error = 'ErrorCantConnectToServiceAPI'
-                continue; 
-            }
-            return info
-        } catch (error) {
-            continue
-        }
-    }
-
-    return { error: error || 'ErrorUnknown' }
+    return await (await fetch(`${process.env.METADATA}/channel/${id}`)).json()
 }
 
 async function getChannelVideos(id) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const videos = [];
-            const yt = await Innertube.create();
-            const channel = await yt.getChannel(id);
-            let json = await channel.getVideos();
-    
-            videos.push(...json.videos);
-    
-            while (json.has_continuation && videos.length < 60) {
-                json = await getNextPage(json);
-                videos.push(...json.videos);
-            }
-    
-            resolve(videos);
-            
-        } catch (e) {
-            resolve(false);
-        }
-    });
-    
-    async function getNextPage(json) {
-        const page = await json.getContinuation();
-        return page;
-    }
+    return await (await fetch(`${process.env.METADATA}/videos/${id}`)).json()
 }
 
 async function getPlaylistVideos(id) {
