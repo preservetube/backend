@@ -2,7 +2,7 @@ const { Innertube } = require('youtubei.js');
 const fetch = require('node-fetch')
 
 const maxRetries = 5
-const platforms = ['WEB', 'ANDROID', 'iOS']
+const platforms = ['ANDROID', 'iOS', 'WEB']
 
 async function getPipedInstance() {
     const instances = await (await fetch('https://piped-instances.kavin.rocks/', {
