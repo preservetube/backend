@@ -22,7 +22,7 @@
     "rolling-rate-limiter": "^0.4.2",
     "wget-improved": "^3.4.0",
     "winston": "^3.8.2",
-    "youtubei.js": "^9.1.0"
+    "youtubei.js": "^9.2.0"
   },
   "devDependencies": {
     "prisma": "4.9.0"
