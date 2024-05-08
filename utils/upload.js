@@ -21,7 +21,7 @@ async function uploadVideo(video) {
     ContentType: 'video/mp4',
   }).promise()
 
-  return uploaded.Location
+  return (uploaded.Location).replace(keys.endpoint, 'https://minio.archive.party')
 }
 
 async function uploadImage(id, url) {
@@ -52,7 +52,7 @@ async function uploadImage(id, url) {
       ContentType: 'video/webp',
     }).promise()
 
-    return uploaded.Location
+    return (uploaded.Location).replace(keys.endpoint, 'https://minio.archive.party')
   }
 }
 
