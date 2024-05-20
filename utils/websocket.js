@@ -26,7 +26,7 @@ async function createDatabaseVideo(id, videoUrl, playlistId) {
             channel: channelData.metadata.title,
             channelId: channelData.metadata.external_id,
             channelAvatar: uploaderAvatar,
-            channelVerified: channelData.header.author.is_verified || false,
+            channelVerified: channelData.header.author?.is_verified || false,
             playlist: playlistId
         }
     })

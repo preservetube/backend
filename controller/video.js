@@ -93,7 +93,7 @@ exports.getChannel = async (req, res) => {
     const json = {
         name: channel.metadata.title,
         avatar: channel.metadata.avatar[0].url,
-        verified: channel.header.author.is_verified,
+        verified: channel.header.author?.is_verified,
         videos: processedVideos
     }
     await redis.set(`channel:${req.params.id}`, JSON.stringify(json), 'EX', 3600)
