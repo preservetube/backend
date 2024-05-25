@@ -85,7 +85,7 @@ exports.save = async (ws, req) => {
                 fs.unlinkSync(`./videos/${id}.mp4`)
 
                 const uploaded = await websocket.createDatabaseVideo(id, videoUrl)
-                if (!uploaded) {
+                if (uploaded != 'success') {
                     ws.send(`DATA - Error while uploading - ${JSON.stringify(uploaded)}`)
                 } else {
                     ws.send(`DONE - ${process.env.FRONTEND}/watch?v=${id}`)

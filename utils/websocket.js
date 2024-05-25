@@ -31,7 +31,7 @@ async function createDatabaseVideo(id, videoUrl, playlistId) {
         }
     })
 
-    return true
+    return 'success'
 }
 
 module.exports = { createDatabaseVideo }
