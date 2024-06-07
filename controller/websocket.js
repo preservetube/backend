@@ -57,7 +57,7 @@ exports.save = async (ws, req) => {
         if (msg == 'alive') return 
 
         if (await redis.get(id) != 'downloading') {
-            await redis.set(id, 'downloading')
+            await redis.set(id, 'downloading', 'EX', 300)
             const confirm = await captcha.checkCaptcha(msg)
 
             if (confirm) startDownloading()
@@ -168,7 +168,7 @@ exports.playlist = async (ws, req) => {
             }
 
             ws.send(`INFO - Downloading ${video.title}<br><br>`)
-            await redis.set(id, 'downloading')
+            await redis.set(id, 'downloading', 'EX', 300)
 
             const download = await ytdlp.downloadVideo('https://www.youtube.com' + video.url, ws, id)
             if (download.fail) {
@@ -264,7 +264,7 @@ exports.channel = async (ws, req) => {
             }
             
             ws.send(`INFO - Downloading ${video.title.text}<br><br>`)
-            await redis.set(video.id, 'downloading')
+            await redis.set(video.id, 'downloading', 'EX', 300)
 
             const download = await ytdlp.downloadVideo(`https://www.youtube.com/watch?v=${video.id}`, ws, video.id)
             if (download.fail) {

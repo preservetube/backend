@@ -18,7 +18,7 @@ async function downloadVideo(url, ws, id) {
         const downloadJson = await metadata.getVideoDownload(url, quality)
         if (downloadJson.status == 'error') {
             return resolve({
-                message: 'Failed to request Youtube. Please retry...',
+                message: `Failed to request Youtube with error ${downloadJson.text}. Please retry...`,
                 fail: true
             })
         }
