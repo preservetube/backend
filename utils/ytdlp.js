@@ -28,7 +28,9 @@ async function downloadVideo(url, ws, id) {
         let prevBytes = 0
         let speed = 0
         const alreadyPrecentages = []
-        const download = wget.download(downloadJson.url, `./videos/${id}.mp4`, {
+
+        const target = Array.isArray(downloadJson.url) ? downloadJson.url[0] : downloadJson.url
+        const download = wget.download(target, `./videos/${id}.mp4`, {
             proxy: 'http://gluetun:8888'
         })
         
