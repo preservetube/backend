@@ -30,7 +30,7 @@ async function downloadVideo(url, ws, id) {
         const alreadyPrecentages = []
 
         const target = Array.isArray(downloadJson.url) ? downloadJson.url[0] : downloadJson.url
-        const download = wget.download(target, `./videos/${id}.mp4`)
+        const download = wget.download(target.replace('https://', 'http://'), `./videos/${id}.mp4`)
         
         download.on('start', fileSize => {
             size = fileSize
