@@ -3,7 +3,7 @@ const metadata = require('./metadata.js')
 
 async function downloadVideo(url, ws, id) {
     return new Promise(async (resolve, reject) => {
-        let quality = '720'
+        let quality = '720p60'
         const video = await metadata.getVideoMetadata(id)
         if (video.error) {
             return resolve({
@@ -11,10 +11,10 @@ async function downloadVideo(url, ws, id) {
                 fail: true
             })
         }
-        if (video.basic_info.duration >= 900) quality = '360' // 15 minutes
+        if (video.basic_info.duration >= 900) quality = '360p' // 15 minutes
 
         let isDownloading = true 
-        const downloader = new WebSocket(`ws://${process.env.METADATA.replace('http://', '')}/download/${id}/${quality}p`)
+        const downloader = new WebSocket(`ws://${process.env.METADATA.replace('http://', '')}/download/${id}/${quality}`)
         downloader.on('message', async function message(data) {
             const text = data.toString()
             if (text == 'done') {
