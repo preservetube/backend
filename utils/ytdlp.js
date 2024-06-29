@@ -23,7 +23,7 @@ async function downloadVideo(url, ws, id) {
                     fail: false
                 })
             } else {
-                ws.send(text)
+                ws.send(`DATA - ${text}`)
             }
         })
 
