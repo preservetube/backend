@@ -58,7 +58,7 @@ exports.save = async (ws, req) => {
 
         if (await redis.get(id) != 'downloading') {
             await redis.set(id, 'downloading', 'EX', 300)
-            const confirm = await captcha.checkCaptcha(msg)
+            const confirm = true//await captcha.checkCaptcha(msg)
 
             if (confirm) startDownloading()
             else {
