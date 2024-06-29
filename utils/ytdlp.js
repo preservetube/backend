@@ -3,7 +3,7 @@ const metadata = require('./metadata.js')
 
 async function downloadVideo(url, ws, id) {
     return new Promise(async (resolve, reject) => {
-        let quality = '720p60'
+        let quality = '480p'
         const video = await metadata.getVideoMetadata(id)
         if (video.error) {
             return resolve({
