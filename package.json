@@ -23,7 +23,8 @@
     "readable-to-ms": "^1.0.3",
     "rolling-rate-limiter": "^0.4.2",
     "wget-improved": "^3.4.0",
-    "winston": "^3.8.2"
+    "winston": "^3.8.2",
+    "ws": "^8.17.1"
   },
   "devDependencies": {
     "prisma": "4.9.0"
