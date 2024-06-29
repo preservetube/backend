@@ -36,9 +36,21 @@ async function downloadVideo(url, ws, id) {
         let speed = 0
         const alreadyPrecentages = []
 
-        console.log(downloadJson.url[1])
         const target = Array.isArray(downloadJson.url) ? downloadJson.url[0] : downloadJson.url
-        const download = wget.download(target, `./videos/${id}.mp4`)
+        const download = wget.download(target, `./videos/${id}.mp4`, {
+            proxy: {
+                protocol: 'http',
+                host: 'gluetun',
+                port: '8888',
+                headers: {
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+                    accept: '*/*',
+                    origin: 'https://www.youtube.com',
+                    referer: 'https://www.youtube.com',
+                    DNT: '?1'
+                }
+            }
+        })
         
         download.on('start', fileSize => {
             size = fileSize
@@ -77,7 +89,20 @@ async function downloadVideo(url, ws, id) {
             if (Array.isArray(downloadJson.url)) { // this means video is separate
                 ws.send(`DATA - Downloading the video has finished, downloading audio.`);
                 
-                const audioDownload = wget.download(downloadJson.url[1], `./videos/${id}_audio.mp4`)
+                const audioDownload = wget.download(downloadJson.url[1], `./videos/${id}_audio.mp4`, {
+                    proxy: {
+                        protocol: 'http',
+                        host: 'gluetun',
+                        port: '8888',
+                        headers: {
+                            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+                            accept: '*/*',
+                            origin: 'https://www.youtube.com',
+                            referer: 'https://www.youtube.com',
+                            DNT: '?1'
+                        }
+                    }
+                })
                 audioDownload.on('end', async (audioOutput) => {
                     if (audioOutput !== 'Finished writing to disk') {
                         return resolve({ fail: true });
@@ -88,8 +113,8 @@ async function downloadVideo(url, ws, id) {
                         await mergeIt(`./videos/${id}_audio.mp4`, `./videos/${id}_video.mp4`, `./videos/${id}.mp4`);
                         ws.send(`DATA - Merging succeeded.`)
 
-                        fs.rmdirSync(`./videos/${id}_audio.mp4`)
-                        fs.rmdirSync(`./videos/${id}_video.mp4`)
+                        fs.rmSync(`./videos/${id}_audio.mp4`)
+                        fs.rmSync(`./videos/${id}_video.mp4`)
 
                         return resolve({ fail: false });
                     } catch (error) {
