@@ -5,7 +5,6 @@ const hr = require('@tsmx/human-readable')
 
 const ffmpeg = require('fluent-ffmpeg')
 const ffmpegStatic = require('ffmpeg-static')
-const path = require('node:path')
 const fs = require('node:fs')
 
 ffmpeg.setFfmpegPath(ffmpegStatic)
@@ -22,13 +21,7 @@ async function downloadVideo(url, ws, id) {
         }
         if (video.basic_info.duration >= 900) quality = '360' // 15 minutes
 
-        const downloadJson = await metadata.getVideoDownload(url, quality)
-        if (downloadJson.status == 'error') {
-            return resolve({
-                message: `Failed to request Youtube with error ${downloadJson.text}. Please retry...`,
-                fail: true
-            })
-        }
+        const downloadJson = await metadata.getVideoDownload(video, quality)
 
         let size = ''
         let startTime = Date.now()

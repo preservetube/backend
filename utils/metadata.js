@@ -1,5 +1,4 @@
 const fetch = require('node-fetch')
-const maxRetries = 5
 
 async function getPipedInstance() {
     const instances = await (await fetch('https://piped-instances.kavin.rocks/', {
@@ -32,31 +31,27 @@ async function getPlaylistVideos(id) {
     return json
 }
 
-async function getVideoDownload(url, quality) {
-    let json 
-
-    for (let retries = 0; retries < maxRetries; retries++) {
-        try {
-            json = await (await fetch('http://gluetun:9000/api/json', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    'url': url,
-                    'vQuality': quality
-                })
-            })).json()
-
-            if (json.error) continue
-            return json
-        } catch (error) {
-            continue
-        }
+async function getVideoDownload(json, quality) {
+    const adaptiveFormats = json['streaming_data']['adaptive_formats'];
+    let video = adaptiveFormats.find(f => f.quality_label === `${quality}p` && !f.has_audio);
+    if (!video) { // stupid bullshit. basically finding the lowest quality if the quality specified isnt there
+        video = adaptiveFormats.filter(f => !f.has_audio).reduce((prev, current) => {
+            if (!prev || parseInt(current.quality_label) < parseInt(prev.quality_label)) {
+                return current;
+            }
+            return prev;
+        }, null);
     }
 
-    return json
+    const audio = adaptiveFormats.find(f => f.has_audio);
+
+    return {
+        url: [
+            video.url,
+            audio.url
+        ]
+    };
 }
+
 
 module.exports = { getVideoMetadata, getChannel, getChannelVideos, getPlaylistVideos, getVideoDownload }
