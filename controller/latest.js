@@ -1,7 +1,35 @@
 const { PrismaClient } =  require('@prisma/client')
-const { SitemapStream, streamToPromise } = require('sitemap')
 const redis = require('../utils/redis.js')
 const prisma = new PrismaClient()
+
+function createSitemapXML(urls) {
+    const xml = urls.map(url => `
+        <url>
+            <loc>${url}</loc>
+            <changefreq>never</changefreq>
+            <priority>0.7</priority>
+        </url>
+    `).join('');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        ${xml}
+    </urlset>`;
+}
+
+function createSitemapIndexXML(sitemaps) {
+    const xml = sitemaps.map((sitemap, index) => `
+        <sitemap>
+            <loc>https://api.preservetube.com/${sitemap}</loc>
+            <lastmod>${new Date().toISOString()}</lastmod>
+        </sitemap>
+    `).join('');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        ${xml}
+    </sitemapindex>`;
+}
 
 exports.getLatest = async (req, res) => {
     let json
@@ -36,10 +64,10 @@ exports.getLatest = async (req, res) => {
 }
 
 exports.getSitemap = async (req, res) => {
-    const cachedSitemap = await redis.get('sitemap');
-    if (cachedSitemap) {
+    const cachedSitemapIndex = await redis.get('sitemap-index');
+    if (cachedSitemapIndex) {
         res.header('Content-Type', 'application/xml');
-        return res.send(cachedSitemap);
+        return res.send(cachedSitemapIndex);
     }
 
     const dbVideos = await prisma.videos.findMany({
@@ -48,19 +76,27 @@ exports.getSitemap = async (req, res) => {
         },
     });
 
-    const videos = dbVideos.map((video) => ({
-        url: `/videos/${video.id}`,
-        changefreq: 'never',
-        priority: 0.7,
-    }));
+    const urls = dbVideos.map((video) => `https://preservetube.com/watch?v=${video.id}`);
+    const sitemaps = [];
+    for (let i = 0; i < urls.length; i += 50000) {
+        const batch = urls.slice(i, i + 50000);
+        await redis.set(`sitemap-${sitemaps.length}`, createSitemapXML(batch), 'EX', 86400);
+        sitemaps.push(`sitemap-${sitemaps.length}.xml`);
+    }
 
-    const smStream = new SitemapStream({ hostname: 'https://preservetube.com' });
-    videos.forEach((video) => smStream.write(video));
-    smStream.end();
-
-    const sitemap = await streamToPromise(smStream).then((data) => data.toString());
-    await redis.set('sitemap', sitemap, 'EX', 86400);
+    const sitemapIndexXML = createSitemapIndexXML(sitemaps);
+    await redis.set('sitemap-index', sitemapIndexXML, 'EX', 86400);
 
     res.header('Content-Type', 'application/xml');
-    res.send(sitemap);
+    res.send(sitemapIndexXML);
+};
+
+exports.getSubSitemap = async (req, res) => {
+    const cachedSitemap = await redis.get(`sitemap-${req.params.index}`);
+    if (cachedSitemap) {
+        res.header('Content-Type', 'application/xml');
+        return res.send(cachedSitemap);
+    }
+
+    res.status(404).send('');
 };

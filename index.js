@@ -17,7 +17,8 @@ require('express-ws')(app)
 app.use(cors())
 
 app.get('/latest', latestController.getLatest)
-app.get('/sitemap.xml', latestController.getSitemap)
+app.get('/sitemap-index.xml', latestController.getSitemap)
+app.get('/sitemap-:index.xml', latestController.getSubSitemap)
 
 app.get('/video/:id', videoController.getVideo)
 app.get('/channel/:id', videoController.getChannel)
