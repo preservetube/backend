@@ -1,9 +1,9 @@
-FROM oven/bun:1 AS base
+FROM node:alpine
 
 RUN mkdir -p /usr/src/preservetube/backend
 WORKDIR /usr/src/preservetube/backend
 
 COPY . /usr/src/preservetube/backend
-RUN bun install
+RUN yarn
 
-CMD ["bun", "run", "index.js"]
+CMD ["node", "index.js"]
