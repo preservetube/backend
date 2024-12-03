@@ -1,9 +1,9 @@
-FROM node:alpine
+FROM oven/bun:1 AS base
 
 RUN mkdir -p /usr/src/preservetube/backend
 WORKDIR /usr/src/preservetube/backend
 
 COPY . /usr/src/preservetube/backend
-RUN yarn
+RUN bun install
 
-CMD ["node", "index.js"]
+CMD ["bun", "run", "src/index.ts"]
