@@ -2,6 +2,7 @@
   "name": "preservetube-backend",
   "module": "src/index.ts",
   "type": "module",
+  "license": "AGPL-3.0",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts"
