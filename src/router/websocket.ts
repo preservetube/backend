@@ -1,5 +1,4 @@
 import { Elysia, t } from 'elysia';
-import { Redis } from 'ioredis'
 import * as fs from 'node:fs'
 
 import { db } from '@/utils/database'
@@ -8,12 +7,9 @@ import { checkCaptcha, createDatabaseVideo } from '@/utils/common';
 import { downloadVideo } from '@/utils/download';
 import { uploadVideo } from '@/utils/upload';
 import { getChannelVideos } from '@/utils/metadata';
+import redis from '@/utils/redis';
 
 const app = new Elysia()
-const redis = new Redis({
-  host: process.env.REDIS_HOST,
-  password: process.env.REDIS_PASS,
-});
 const videoIds: Record<string, string> = {}
 
 const sendError = (ws: any, message: string) => {
@@ -53,7 +49,6 @@ const handleUpload = async (ws: any, videoId: string, isChannel: boolean = false
     return false;
   }
 };
-
 
 app.ws('/save', {
   query: t.Object({

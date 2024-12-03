@@ -1,16 +1,12 @@
 import { Elysia } from 'elysia';
-import { Redis } from 'ioredis'
 import DOMPurify from 'isomorphic-dompurify'
 
 import { db } from '@/utils/database'
 import { getChannel, getChannelVideos } from '@/utils/metadata';
 import { convertRelativeToDate } from '@/utils/common';
+import redis from '@/utils/redis';
 
 const app = new Elysia()
-const redis = new Redis({
-  host: process.env.REDIS_HOST,
-  password: process.env.REDIS_PASS,
-});
 
 interface processedVideo {
   id: string;

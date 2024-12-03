@@ -1,15 +1,11 @@
 import { Elysia, t } from 'elysia';
-import { Redis } from 'ioredis'
 import { RedisRateLimiter } from 'rolling-rate-limiter'
 
 import { db } from '@/utils/database'
-import { validateVideo, validatePlaylist, validateChannel } from '@/utils/regex'
+import { validateVideo, validateChannel } from '@/utils/regex'
+import redis from '@/utils/redis';
 
 const app = new Elysia()
-const redis = new Redis({
-  host: process.env.REDIS_HOST,
-  password: process.env.REDIS_PASS,
-});
 
 const limiter = new RedisRateLimiter({
   client: redis,

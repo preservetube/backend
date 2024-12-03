@@ -1,13 +1,9 @@
 import { Elysia } from 'elysia';
-import { Redis } from 'ioredis'
 
 import { db } from '@/utils/database'
+import redis from '@/utils/redis';
 
 const app = new Elysia()
-const redis = new Redis({
-  host: process.env.REDIS_HOST,
-  password: process.env.REDIS_PASS,
-});
 
 app.get('/transparency/list', async () => {
   const cached = await redis.get('transparency')
