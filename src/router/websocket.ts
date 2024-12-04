@@ -45,7 +45,9 @@ const handleUpload = async (ws: any, videoId: string, isChannel: boolean = false
     return true;
   } catch (error: any) {
     ws.send(`ERROR - Upload failed for ${videoId}: ${error.message}`);
-    fs.unlinkSync(filePath);
+    console.log(`upload failed for ${videoId}: ${error.message}`)
+
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
     return false;
   }
 };
