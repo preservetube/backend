@@ -17,7 +17,7 @@ redis.on('ready', async function () {
     const files = fs.readdirSync('videos')
     const webmFiles = files.filter((file) => file.endsWith('.mp4'))
     webmFiles.forEach(async (f) => {
-      const videoId = f.replace('.mp4', '')
+      const videoId = f.includes('_') ? f.split('_')[0] : f.replace('.mp4', '')
       const isActive = await redis.get(videoId)
       if (!isActive) {
         fs.unlinkSync(`./videos/${f}`)
