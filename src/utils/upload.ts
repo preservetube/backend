@@ -21,7 +21,7 @@ const images3 = new S3({
 async function uploadVideo(video: string) {
   const videoFile = fs.readFileSync(video)
   const uploaded = await videos3.put(video.split('/')[2], videoFile)
-  return uploaded.url.replace(keys.endpoint, 'https://s2.archive.party')
+  return uploaded.url.replace(keys.endpoint, 'https://s3.archive.party')
 }
 
 async function uploadImage(id: string, url: string) {
@@ -32,7 +32,7 @@ async function uploadImage(id: string, url: string) {
   const buffer = Buffer.from(await response.arrayBuffer())
 
   const uploaded = await images3.put(`${id}.webp`, buffer)
-  return uploaded.url.replace(keys.endpoint, 'https://s2.archive.party')
+  return uploaded.url.replace(keys.endpoint, 'https://s3.archive.party')
 }
 
 export { uploadVideo, uploadImage }
