@@ -51,7 +51,7 @@ app.get('/channel/:id', async ({ params: { id }, error }) => {
     .execute()
 
   const processedVideos: processedVideo[] = videos.map((video: any) => ({ // it would be impossible to set types for youtube output... they change it every day.
-    id: video.id,
+    id: video.video_id,
     title: video.title.text,
     thumbnail: video.thumbnails[0].url,
     published: (video.published.text.endsWith('ago') ? convertRelativeToDate(video.published.text) : new Date(video.published.text)).toISOString().slice(0, 10)
