@@ -145,21 +145,21 @@ app.ws('/savechannel', {
     const videos = await getChannelVideos(channelId);
 
     for (const video of videos.slice(0, 5)) {
-      if (!video || (await redis.get(video.id)) || (await redis.get(`blacklist:${video.id}`))) continue;
+      if (!video || (await redis.get(video.video_id)) || (await redis.get(`blacklist:${video.video_id}`))) continue;
      
       const already = await db.selectFrom('videos')
         .select('id')
-        .where('id', '=', video.id)
+        .where('id', '=', video.video_id)
         .executeTakeFirst()
       if (already) continue
 
       ws.send(`DATA - Processing video: ${video.title.text}`);
-      await redis.set(video.id, 'downloading', 'EX', 300);
+      await redis.set(video.video_id, 'downloading', 'EX', 300);
 
-      const downloadResult = await downloadVideo(ws, video.id);
-      if (!downloadResult.fail) await handleUpload(ws, video.id, true);
+      const downloadResult = await downloadVideo(ws, video.video_id);
+      if (!downloadResult.fail) await handleUpload(ws, video.video_id, true);
 
-      await redis.del(video.id);
+      await redis.del(video.video_id);
       ws.send(`DATA - Created video page for ${video.title.text}`)
     }
 
