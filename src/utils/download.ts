@@ -46,14 +46,15 @@ async function getVideoQuality(json: any, quality: string) {
   const adaptiveFormats = json['streaming_data']['adaptive_formats'];
   let video = adaptiveFormats.find((f: any) => f.quality_label === quality && !f.has_audio);
 
-  // If the specified quality isn't available, find the lowest quality video
-  if (!video) { // @ts-ignore
-    video = adaptiveFormats.filter((f: any) => !f.has_audio).reduce((prev, current) => {
-      if (!prev || parseInt(current.quality_label) < parseInt(prev.quality_label)) {
-        return current;
-      }
-      return prev;
-    }, null);
+  if (!video) {
+    const target = parseInt(quality);
+    video = adaptiveFormats // find the quality thats closest to the one we wanted
+      .filter((f: any) => !f.has_audio && f.quality_label)
+      .reduce((prev: any, curr: any) => {
+        const currDiff = Math.abs(parseInt(curr.quality_label) - target);
+        const prevDiff = prev ? Math.abs(parseInt(prev.quality_label) - target) : Infinity;
+        return currDiff < prevDiff ? curr : prev;
+      }, null);
   }
 
   return video ? video.quality_label : null;
