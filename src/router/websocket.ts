@@ -24,8 +24,10 @@ const cleanup = async (ws: any, videoId: string) => {
 };
 
 const handleUpload = async (ws: any, videoId: string, isChannel: boolean = false) => {
-  const filePath = `./videos/${videoId}.mp4`;
-  if (!fs.existsSync(filePath)) {
+  // the pattern of files that have finished downloading is [videoid].mp4, but some extensions are also possible due to 
+  // current youtube changes, so we need to make sure the other extensions are also covered
+  const filePath = fs.readdirSync('./videos/').find(f => f.includes(`${videoId}.`))
+  if (!filePath) {
     ws.send(`DATA - Video file for ${videoId} not found. Skipping.`);
     return false;
   }
