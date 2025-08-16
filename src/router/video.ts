@@ -54,7 +54,7 @@ app.get('/channel/:id', async ({ params: { id }, error }) => {
     id: video.video_id,
     title: video.title.text,
     thumbnail: video.thumbnails[0].url,
-    published: (video.published.text.endsWith('ago') ? convertRelativeToDate(video.published.text) : new Date(video.published.text)).toISOString().slice(0, 10)
+    published: video.upcoming?.slice(0, 10) || (video.published.text.endsWith('ago') ? convertRelativeToDate(video.published.text) : new Date(video.published.text)).toISOString().slice(0, 10)
   }))
 
   archived.forEach(v => {
