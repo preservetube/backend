@@ -128,6 +128,7 @@ app.ws('/savechannel', {
 
     const channelId = await validateChannel(ws.data.query.url);
     if (!channelId) return sendError(ws, 'Invalid channel URL.');
+    if (typeof channelId !== 'string') return sendError(ws, `Failed to fetch channel ID - ${channelId.error}`)
 
     ws.send('DATA - This process is automatic. Your video will start archiving shortly.')
     ws.send('CAPTCHA - Solving a cryptographic challenge before downloading.')
