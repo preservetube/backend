@@ -1,5 +1,4 @@
 import WebSocket from 'ws';
-import { getVideo } from '@/utils/metadata';
 
 async function downloadVideo(ws: any, id: string): Promise<{ fail: boolean, message: string }> {
   return new Promise(async (resolve, reject) => {
