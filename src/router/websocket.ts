@@ -95,6 +95,8 @@ app.ws('/save', {
       if (!(await checkCaptcha(message))) {
         await cleanup(ws, videoId);
         return sendError(ws, 'Captcha validation failed.');
+      } else {
+        ws.send('DATA - Captcha validated. Starting download...');
       }
 
       const downloadResult = await downloadVideo(ws, videoId);
@@ -144,6 +146,8 @@ app.ws('/savechannel', {
     if (!(await checkCaptcha(message))) {
       await cleanup(ws, channelId);
       return sendError(ws, 'Captcha validation failed.');
+    } else {
+      ws.send('DATA - Captcha validated. Starting download...');
     }
 
     videoIds[ws.id] = `downloading-${channelId}`;
