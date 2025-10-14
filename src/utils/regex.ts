@@ -14,6 +14,8 @@ function validateVideo(input: string): string | false {
         videoId = url.searchParams.get('v')!
       } else if (url.pathname.startsWith('/shorts/')) {
         videoId = url.pathname.replace('/shorts/', '')
+      } else if (url.pathname.startsWith('/live/')) {
+        videoId = url.pathname.replace('/live/', '')
       } else return false
       // removed - embed url
     }
