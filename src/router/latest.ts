@@ -1,24 +1,32 @@
 import { Elysia } from 'elysia';
-
 import { db } from '@/utils/database'
 import { createSitemapXML, createSitemapIndexXML } from '@/utils/sitemap'
+import { m, eta } from '@/utils/html'
 import redis from '@/utils/redis';
 
 const app = new Elysia()
 
-app.get('/latest', async () => {
-  const cached = await redis.get('latest')
-  if (cached) return JSON.parse(cached)
+app.get('/latest', async ({ set }) => {
+  const cached = await redis.get('latest:html')
+  if (cached) {
+    set.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return cached
+  }
 
   const json = await db.selectFrom('videos')
     .select(['id', 'title', 'thumbnail', 'published', 'archived', 'channel', 'channelId', 'channelAvatar', 'channelVerified'])
     .orderBy('archived desc')
-    .limit(50)
+    .limit(51)
     .execute()
+  
+  const html = await m(eta.render('./latest', { 
+    data: json,
+    title: 'Latest | PreserveTube',
+  }))
+  await redis.set('latest:html', html, 'EX', 3600)
 
-  await redis.set('latest', JSON.stringify(json), 'EX', 3600)
-
-  return json
+  set.headers['Content-Type'] = 'text/html; charset=utf-8'
+  return html
 })
 
 app.get('/sitemap-index.xml', async ({ set }) => {

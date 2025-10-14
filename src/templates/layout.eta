@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<% if (it.keywords) { %>
+			<meta name="keywords" content="<%= it.keywords %>"/>
+    <% } %>
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+		<meta property="og:title" content="<%= it.title %>"/>
+		<% if (it.description) { %>
+			<meta name="og:description" content="<%= it.description %>">
+    <% } else { %>
+			<meta name="og:description" content="PreserveTube is a time capsule for YouTube videos! It allows you to preserve any YouTube video, creating a snapshot that will always be available even if the original video disappears or is taken down.">
+		<% } %>
+		<meta property="og:type" content="website"/>
+		<meta property="og:url" content="https://preservetube.com"/>
+		<meta property="og:site_name" content="PreserveTube"/>
+	  
+		<meta name="twitter:card" content="summary_large_image">
+		<meta name="twitter:title" content="<%= it.title %>">
+		<% if (it.description) { %>
+			<meta name="twitter:description" content="<%= it.description %>">
+    <% } else { %>
+			<meta name="twitter:description" content="PreserveTube is a time capsule for YouTube videos! It allows you to preserve any YouTube video, creating a snapshot that will always be available even if the original video disappears or is taken down.">
+		<% } %>
+	  
+		<link href="https://cdn.jsdelivr.net/gh/preservetube/fonts@main/fonts.css" rel="stylesheet" type="text/css">
+		
+		<% if (it.manualAnalytics) { %>
+			<script defer data-domain="preservetube.com" src="https://a.gloe.net/js/script.manual.js"></script>
+			<script>window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }</script>
+			<script>
+				function prepareUrl(params) {
+					const url = new URL(location.href);
+					return params.reduce((customUrl, param) => {
+						const value = url.searchParams.get(param);
+						return value ? `${customUrl}/${value}` : customUrl;
+					}, `${url.origin}${url.pathname.replace(/\/$/, '')}`);
+				}
+				plausible('pageview', { u: prepareUrl(["v"]) + window.location.search });
+			</script>
+    <% } else { %>
+			<script defer data-domain="preservetube.com" src="https://a.gloe.net/js/script.js"></script>
+		<% } %>
+
+		<title><%= it.title %></title>
+	</head>
+	<body>
+		<div class="header">
+			<div class="logo">
+				<a href="/">PreserveTube</a>
+			</div>
+			|
+			<div class="buttons">
+				<a href="/latest">Latest</a>
+			</div>
+		</div>
+		<div class="donate">
+			<span>PreserveTube is dedicated to preserving internet history, and we need your help! Every donation, big or small, makes a difference.</span>
+			<a href="/donate" style="font-weight: bold;">Donate now.</a>
+		</div>
+		<main>
+			<%~ it.body %>
+		</main>
+		<footer>
+			page rendered by <code><%= hostname %></code>
+		</footer>
+	</body>
+</html>
+
+<style>
+	html,
+	body {
+		margin: 0;
+		padding: 0;
+		background-color: #fffeff;
+		font-family: "Proxima Nova", sans-serif;
+	}
+
+	a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.header {
+		position: relative;
+		background-color: #1b1c1f;
+		color: white;
+		height: 30px;
+		padding-top: 5px;
+		padding-left: 17.5%;
+		padding-right: 17.5%;
+	}
+
+	.donate {
+		position: relative;
+		background-color: #fff2cf;
+		border-bottom: 2px dashed #dab75e;
+		padding-top: 5px;
+		padding-bottom: 5px;
+		text-align: center;
+	}
+
+	@media (max-width: 1100px) {
+		.donate {
+			padding-left: 5%;
+			padding-right: 5%;
+		}
+	}
+
+	.logo {
+		padding-right: 12px;
+		font-size: 20px;
+		font-weight: bold;
+		display: inline-block;
+	}
+
+	.buttons {
+		padding-left: 12px;
+		font-size: 15px;
+		display: inline-block;
+	}
+
+	@media only screen and (max-width: 767px) {
+		.header {
+			padding-left: 5%;
+			padding-right: 5%;
+		}
+	}
+
+	footer {
+		padding: 10px;
+		text-align: center;
+		font-size: 12px;
+		color: gray;
+	}
+
+	footer > code {
+		padding: 2px 4px;
+		font-size: 12px;
+	}
+</style>

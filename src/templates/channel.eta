@@ -1,0 +1,92 @@
+<% layout('./layout') %>
+
+<% if (it.failedToFetch) { %>
+  <div class="channel">
+    <h2>
+      An error occurred while attempting to retrieve this channel from YouTube. <br/>
+      To access all videos without relying on YouTube data, please <a href="/channel/<%= it.id %>/videos">click here</a>. 
+    </h2>
+  </div>
+<% } else { %>
+  <div class="channel">
+    <img src="<%= it.avatar %>" />
+    <h1><%= it.name %></h1>
+  </div>
+
+  <div class="grid">
+    <% it.videos.forEach(function(v){ %>
+      <div class="video">
+        <a href="/watch?v=<%= v.id %>">
+          <img class="thumbnail" src="<%= v.thumbnail %>" />
+          <div class="title"><%= v.title %></div>
+          <div class="date">
+            Published on <%= v.published %>
+
+            <% if (v.archived) { %>
+              | Archived on <%= v.archived %>
+            <% } %>
+          </div>
+
+          <% if (v.deleted) { %>
+            <div class="deleted">(the original video has been deleted)</div>
+          <% } %>
+        </a>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<style>
+  .channel {
+    margin: 0 auto;
+    display: flex;
+    place-items: center;
+    justify-content: center;
+  }
+
+  .channel img {
+    border-radius: 50%;
+    margin-right: 10px;
+    display: inline-block;
+    width: 48px;
+    height: 48px;
+  }
+
+  .channel h1 {
+    display: inline-block;
+  }
+
+  .verified {
+    height: 20px;
+    margin-left: 5px;
+    content: url("https://api.iconify.design/ion/checkmark-circle.svg");
+    display: inline-block;
+  }
+
+  .grid {
+    margin-left: 10%;
+    margin-right: 10%;
+    margin-top: 1%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .video {
+    padding: 20px;
+  }
+
+  .video img {
+    width: 100%;
+    aspect-ratio: 16/9;
+  }
+
+  .title {
+    margin-top: 5px;
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  .deleted {
+    font-size: 12px;
+  }
+</style>

@@ -4,6 +4,7 @@ import DOMPurify from 'isomorphic-dompurify'
 import { db } from '@/utils/database'
 import { getChannel, getChannelVideos } from '@/utils/metadata';
 import { convertRelativeToDate } from '@/utils/common';
+import { m, eta } from '@/utils/html'
 import redis from '@/utils/redis';
 
 const app = new Elysia()
@@ -15,6 +16,58 @@ interface processedVideo {
   published: string;
   deleted?: undefined;
 }
+
+app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
+  if (!v) return error(404)
+
+  const cached = await redis.get(`watch:${v}:html`)
+  if (cached) {
+    set.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return cached
+  }
+
+  if (!v.match(/[\w\-_]{11}/)) return error(404)
+
+  const json = await db.selectFrom('videos')
+    .selectAll()
+    .where('id', '=', v)
+    .executeTakeFirst()
+
+  if (!json) {
+    const html = await m(eta.render('./watch', { 
+      isMissing: true,
+      id: v,
+      title: 'Video Not Found | PreserveTube'
+    }))
+
+    set.headers['cache-control'] = 'public, no-cache'
+    set.headers['content-type'] = 'text/html; charset=utf-8'
+    return error(404, html)
+  }
+  if (json.disabled) return redirect(`/transparency/${v}`)
+
+  let transparency: any[] = []
+  if (json.hasBeenReported) {
+    transparency = await db.selectFrom('reports')
+      .selectAll()
+      .where('target', '=', v)
+      .execute()
+  }
+
+  const html = await m(eta.render('./watch', { 
+    transparency,
+    ...json,
+    description: DOMPurify.sanitize(json.description),
+    title: `${json.title} | PreserveTube`,
+    v_title: json.title,
+    keywords: `${json.title} video archive, ${json.title} ${json.channel} archive`,
+    manualAnalytics: true
+  }))
+  await redis.set(`watch:${v}:html`, html, 'EX', 3600)
+
+  set.headers['Content-Type'] = 'text/html; charset=utf-8'
+  return html
+})
 
 app.get('/video/:id', async ({ params: { id }, error }) => {
   const cached = await redis.get(`video:${id}`)
@@ -34,16 +87,26 @@ app.get('/video/:id', async ({ params: { id }, error }) => {
   }
 })
 
-app.get('/channel/:id', async ({ params: { id }, error }) => {
-  const cached = await redis.get(`channel:${id}`)
-  if (cached) return JSON.parse(cached)
+app.get('/channel/:id', async ({ params: { id }, set }) => {
+  const cached = await redis.get(`channel:${id}:html`)
+  if (cached) {
+    set.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return cached
+  }
 
   const [videos, channel] = await Promise.all([
     getChannelVideos(id),
     getChannel(id)
   ])
 
-  if (!videos || !channel || videos.error || channel.error) return error(404, { error: '404' })
+  if (!videos || !channel || videos.error || channel.error) {
+    const html = await m(eta.render('./channel', { 
+      failedToFetch: true,
+      id
+    }))
+    set.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return html
+  }
 
   const archived = await db.selectFrom('videos')
     .select(['id', 'title', 'thumbnail', 'published', 'archived'])
@@ -68,20 +131,26 @@ app.get('/channel/:id', async ({ params: { id }, error }) => {
 
   processedVideos.sort((a: any, b: any) => new Date(b.published).getTime() - new Date(a.published).getTime());
 
-  const json = {
+  const html = await m(eta.render('./channel', { 
     name: channel.metadata.title,
     avatar: channel.metadata.avatar[0].url,
     verified: channel.header.author?.is_verified,
-    videos: processedVideos
-  }
-
-  await redis.set(`channel:${id}`, JSON.stringify(json), 'EX', 3600)
-  return json
+    videos: processedVideos,
+    title: `${channel.metadata.title} | PreserveTube`,
+    keywords: `${channel.metadata.title} archive, ${channel.metadata.title} channel archive, ${channel.metadata.title} deleted video, ${channel.metadata.title} video deleted`
+  }))
+  await redis.set(`channel:${id}:html`, html, 'EX', 3600)
+  
+  set.headers['Content-Type'] = 'text/html; charset=utf-8'
+  return html
 })
 
-app.get('/channel/:id/videos', async ({ params: { id } }) => {
-  const cached = await redis.get(`channelVideos:${id}`)
-  if (cached) return JSON.parse(cached)
+app.get('/channel/:id/videos', async ({ params: { id }, set }) => {
+  const cached = await redis.get(`channelVideos:${id}:html`)
+  if (cached) {
+    set.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return cached
+  }
 
   const archived = await db.selectFrom('videos')
     .select(['id', 'title', 'thumbnail', 'published', 'archived'])
@@ -89,11 +158,15 @@ app.get('/channel/:id/videos', async ({ params: { id } }) => {
     .orderBy('published desc')
     .execute()
 
-  const json = {
-    videos: archived
-  }
-  await redis.set(`channelVideos:${id}`, JSON.stringify(json), 'EX', 3600)
-  return json
+  const html = await m(eta.render('./channel-videos', { 
+    videos: archived,
+    title: `${id} videos | PreserveTube`,
+    keywords: `${id} archive, ${id} channel archive, ${id} deleted video, ${id} video deleted`
+  }))
+  await redis.set(`channelVideos:${id}:html`, html, 'EX', 3600)
+
+  set.headers['Content-Type'] = 'text/html; charset=utf-8'
+  return html
 })
 
 export default app

@@ -1,0 +1,67 @@
+<% layout('./layout') %>
+
+<div class="text">
+  <div class="reports">
+    When it comes to reports of child abuse, PLEASE report it to <a href="https://report.cybertip.org/">NCMEC</a> or your local law enforcement agency, who will then contact us. PreserveTube is not legally equipped to handle such reports.
+  </div>
+
+  Our top priority at PreserveTube is to provide a safe and respectful environment for all users of our service. If you come across any content on our website that you believe is inappropriate or violates our community guidelines, we urge you to report it immediately so we can take appropriate action.<br><br>
+          
+  To file an abuse report, please follow these steps:
+
+  <ol>
+    <li>Identify the content that you believe is inappropriate or in violation of our community guidelines.</li>
+    <li>Take a screenshot or copy the URL of the content for reference.</li>
+    <li>Send an email to <a href="mailto:abuse@preservetube.com">abuse@preservetube.com</a> with the subject line "Abuse Report".</li>
+    <li>In the email, please provide the following information:
+      <ul>
+        <li>Your full name and contact information.</li>
+        <li>A detailed description of the content and why you believe it is inappropriate or in violation of our community guidelines.</li>
+        <li>The screenshot or URL of the content for reference.</li>
+      </ul>
+    </li>
+  </ol>
+          
+  At Preservetube, we take a <i>Law of the Land</i> approach to content moderation. This means that we do not allow any content that is illegal or violates the laws of either The Netherlands or The United States of America.
+</div>
+
+<div class="pgp">
+  <a href="pgp.txt">Our PGP key</a> is available for secure communication.
+</div>
+
+
+<style> 
+  a {
+    font-weight: bold;
+  }
+    
+	.text {
+    margin-top: 5%;
+    margin-bottom: 5%;
+    margin-left: auto;
+    margin-right: auto;
+    width: 75%;
+  }
+
+  .pgp {
+		position: absolute;
+		margin-left: auto;
+		margin-right: auto;
+		left: 0;
+		right: 0;
+		bottom: 10px;
+		text-align: center;
+  }
+
+  .reports {
+    background-color: #ffd7cf;
+    border: 2px dashed #da7b5e;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 1rem;
+  }
+    
+  h2 {
+    margin-bottom: 2px;
+  }
+</style>
