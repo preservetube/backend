@@ -3,7 +3,7 @@
 <% if (it.isMissing) { %>
   <div class="error">
     <h2>Archive not found</h2>
-    <button onclick="window.location.href='/save?url=${encodeURIComponent(`https://www.youtube.com/watch?v=<%= it.id %>`)}'">
+    <button onclick="window.location.href='/save?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D<%= it.id %>'">
       Archive Me!
     </button>
   </div>
