@@ -37,7 +37,8 @@ app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
     const html = await m(eta.render('./watch', { 
       isMissing: true,
       id: v,
-      title: 'Video Not Found | PreserveTube'
+      title: 'Video Not Found | PreserveTube',
+      manualAnalytics: true
     }))
 
     set.headers['cache-control'] = 'public, no-cache'
