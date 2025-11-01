@@ -1,5 +1,5 @@
 import { Elysia } from 'elysia';
-import { m, eta } from '@/utils/html'
+import { m, eta, error } from '@/utils/html'
 const app = new Elysia()
 
 app.get('/', async ({ set }) => {
@@ -65,4 +65,5 @@ app.get('/donate', async ({ set }) => {
   }))
 })
 
+app.onError(error)
 export default app;

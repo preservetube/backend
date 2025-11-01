@@ -1,7 +1,7 @@
 import { Elysia } from 'elysia';
 
 import { db } from '@/utils/database'
-import { m, eta } from '@/utils/html'
+import { m, eta, error } from '@/utils/html'
 import redis from '@/utils/redis';
 
 const app = new Elysia()
@@ -52,4 +52,5 @@ app.get('/transparency/:id', async ({ params: { id }, set, error }) => {
   return html
 })
 
+app.onError(error)
 export default app

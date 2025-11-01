@@ -17,6 +17,7 @@
     "@elysiajs/static": "^1.4.0",
     "@types/html-minifier-next": "^2.1.0",
     "@types/pg": "^8.11.10",
+    "age-encryption": "^0.2.4",
     "date-fns": "^4.1.0",
     "elysia": "^1.1.25",
     "eta": "^4.0.1",

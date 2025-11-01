@@ -7,6 +7,7 @@ import { checkCaptcha, createDatabaseVideo } from '@/utils/common';
 import { downloadVideo } from '@/utils/download';
 import { uploadVideo } from '@/utils/upload';
 import { getChannelVideos } from '@/utils/metadata';
+import { error } from '@/utils/html'
 import redis from '@/utils/redis';
 
 const app = new Elysia()
@@ -182,4 +183,5 @@ app.ws('/savechannel', {
   }
 })
 
+app.onError(error)
 export default app

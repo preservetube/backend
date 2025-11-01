@@ -3,7 +3,7 @@ import { RedisRateLimiter } from 'rolling-rate-limiter'
 
 import { db } from '@/utils/database'
 import { validateVideo, validateChannel } from '@/utils/regex'
-import { m, eta } from '@/utils/html'
+import { m, eta, error } from '@/utils/html'
 import redis from '@/utils/redis';
 
 const app = new Elysia()
@@ -59,4 +59,5 @@ app.get('/search/channel', async ({ query: { url }, error, redirect }) => {
   })
 })
 
+app.onError(error)
 export default app

@@ -1,7 +1,7 @@
 import { Elysia } from 'elysia';
 import { db } from '@/utils/database'
 import { createSitemapXML, createSitemapIndexXML } from '@/utils/sitemap'
-import { m, eta } from '@/utils/html'
+import { m, eta, error } from '@/utils/html'
 import redis from '@/utils/redis';
 
 const app = new Elysia()
@@ -67,4 +67,5 @@ app.get('/sitemap-:index.xml', async ({ set, params: { index }, error, path }) =
   return error(404)
 })
 
+app.onError(error)
 export default app

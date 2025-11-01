@@ -4,7 +4,7 @@ import DOMPurify from 'isomorphic-dompurify'
 import { db } from '@/utils/database'
 import { getChannel, getChannelVideos } from '@/utils/metadata';
 import { convertRelativeToDate } from '@/utils/common';
-import { m, eta } from '@/utils/html'
+import { m, eta, error } from '@/utils/html'
 import redis from '@/utils/redis';
 
 const app = new Elysia()
@@ -170,4 +170,5 @@ app.get('/channel/:id/videos', async ({ params: { id }, set }) => {
   return html
 })
 
+app.onError(error)
 export default app
