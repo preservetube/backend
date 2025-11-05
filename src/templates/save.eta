@@ -1,4 +1,8 @@
 <% layout('./layout') %>
+<div class="sorry">
+	I'm running low on usable storage, and don't have the time needed to setup the new storage servers. For now, the quality and maximum length of videos has been lowered. </br>
+  This will hopefully be restored soon, sorry. This in no way affects already saved videos.
+</div>
 
 <div id="logs" class="logs">
   <h1 id="title"></h1>
@@ -51,6 +55,17 @@
 </script>
 
 <style>
+	.sorry {
+    margin-top: 10px;
+		position: relative;
+		background-color: #ffd8cfff;
+    border-top: 2px dashed #da7b5eff;
+		border-bottom: 2px dashed #da7b5eff;
+		padding-top: 5px;
+		padding-bottom: 5px;
+		text-align: center;
+	}
+  
   .logs {
     text-align: center;
   }
