@@ -7,7 +7,7 @@ const videos3 = new S3({
   accessKeyId: keys.videos[0].access,
   secretAccessKey: keys.videos[0].secret,
   bucketName: keys.videos[0].bucket,
-  region: 'auto'
+  region: 'garage'
 })
 
 const images3 = new S3({
@@ -15,7 +15,7 @@ const images3 = new S3({
   accessKeyId: keys.images[0].access,
   secretAccessKey: keys.images[0].secret,
   bucketName: keys.images[0].bucket,
-  region: 'auto'
+  region: 'garage'
 });
 
 async function uploadVideo(video: string) {
