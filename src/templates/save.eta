@@ -1,6 +1,6 @@
 <% layout('./layout') %>
 <div class="sorry">
-  The new storage server has been deployed.
+	YouTube changed some things, causing downloads to be unstable. Right now, there's a high chance downloads won't work. This should hopefully be fixed in the coming days.
 </div>
 
 <div id="logs" class="logs">
@@ -57,9 +57,9 @@
 	.sorry {
     margin-top: 10px;
 		position: relative;
-		background-color: #cfeeffff;
-    border-top: 2px dashed #5ebbdaff;
-		border-bottom: 2px dashed #5ebbdaff;
+		background-color: #ffd8cfff;
+    border-top: 2px dashed #da7b5eff;
+		border-bottom: 2px dashed #da7b5eff;
 		padding-top: 5px;
 		padding-bottom: 5px;
 		text-align: center;
