@@ -66,7 +66,7 @@ async function createDatabaseVideo(id: string, videoUrl: string) {
       uuid: crypto.randomUUID(),
       id: id,
       title: data.videoDetails.title,
-      description: (data.videoDetails.short_description).replaceAll('\n', '<br>'),
+      description: (data.microformat.playerMicroformatRenderer.description.simpleText).replaceAll('\n', '<br>'),
       thumbnail: thumbnailUrl,
       source: videoUrl,
       published: data.microformat.playerMicroformatRenderer.publishDate.slice(0, 10),
