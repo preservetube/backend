@@ -59,7 +59,7 @@ async function createDatabaseVideo(id: string, videoUrl: string) {
   if (channelData.error) return channelData
 
   const uploaderAvatar = await uploadImage(data.videoDetails.channelId, channelData.metadata.thumbnail[0].url)
-  const thumbnailUrl = await uploadImage(id, data.videoDetails.thumbnail.thumbnails[0].url)
+  const thumbnailUrl = await uploadImage(id, data.microformat.playerMicroformatRenderer.thumbnail.thumbnails[0].url)
 
   await db.insertInto('videos')
     .values({
