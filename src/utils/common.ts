@@ -53,23 +53,23 @@ async function checkCaptcha(response: string) {
 
 async function createDatabaseVideo(id: string, videoUrl: string) {
   const data = await getVideo(id)
-  const channelData = await getChannel(data.basic_info.channel_id)
+  const channelData = await getChannel(data.videoDetails.channelId)
 
   if (data.error) return data
   if (channelData.error) return channelData
 
-  const uploaderAvatar = await uploadImage(data.basic_info.channel_id, channelData.metadata.thumbnail[0].url)
-  const thumbnailUrl = await uploadImage(id, data.basic_info.thumbnail[0].url)
+  const uploaderAvatar = await uploadImage(data.videoDetails.channelId, channelData.metadata.thumbnail[0].url)
+  const thumbnailUrl = await uploadImage(id, data.videoDetails.thumbnail.thumbnails[0].url)
 
   await db.insertInto('videos')
     .values({
       uuid: crypto.randomUUID(),
       id: id,
-      title: data.basic_info.title,
-      description: (data.basic_info.short_description).replaceAll('\n', '<br>'),
+      title: data.videoDetails.title,
+      description: (data.videoDetails.short_description).replaceAll('\n', '<br>'),
       thumbnail: thumbnailUrl,
       source: videoUrl,
-      published: (data.primary_info.published.text.endsWith('ago') ? convertRelativeToDate(data.primary_info.published.text) : new Date(data.primary_info.published.text)).toISOString().slice(0, 10),
+      published: data.microformat.playerMicroformatRenderer.publishDate.slice(0, 10),
       archived: (new Date()).toISOString().slice(0, 10),
       channel: channelData.metadata.title,
       channelId: channelData.metadata.external_id,
