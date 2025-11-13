@@ -1,0 +1,46 @@
+<% layout('./layout') %>
+
+<div class="text">
+  <h3>What's the maximum video size? How is the quality decided?</h3>
+  The current maximum video size is 100MB. Videos are by default archived in 480p, but the quality is lowered to 360p if the video is longer than 15 minutes. Both of these values might get lowered or increased as time goes on.<br><br>
+  
+  If you want to archive a video that you find important, please email me. There hasn't yet been a time where I denied one of these requests.
+
+  <h3>Can you archive age-restricted videos?</h3>
+  Sadly, no. Currently this requires downloading the videos with an age verified account, which isn't possible.
+
+  <h3>(Someone) has this video archived. Can you import it?</h3>
+  No. I'd like for all archives on Preservetube to come with a degree of trust, and it's impossible for me to make sure that this (someone) didn't modify the video file before sending it to me. <br><br>
+
+  All Preservetube archives have, and always will be, either archived by users (via Preservetube) or by myself.
+
+  <h3>Why can't I play some videos on iOS/iPadOS devices?</h3>
+  This comes down to how the videos are formatted. To save on space, the videos are in VP9 format, and this isn't supported by <a class="a" href="https://caniuse.com/?search=vp9">Apple devices without a hardware decoder</a>, which is most of them. Try using another device.
+  
+  <h3>Why do the videos sometimes load slowly?</h3>
+  Older videos (ones before Sept 19th 2025) were sadly encoded in a way that requires the browser to load the whole video before being able to play it. Newer videos no longer require this.<br><br>
+  Other reasons for videos loading slowly include your location in comparison to the nearest caching server, and that servers location in comparison to the storage server. The video might be traveling a lot of kilometers before reaching you.
+
+  <h3>How do I get in touch with you?</h3>
+  I'm reachable via admin@preservetube.com (<a class="a" href="/pgp.txt">pgp</a>).
+</div>
+
+<style> 
+  .a {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+  }
+    
+	.text {
+    margin-top: 2.5%;
+    margin-bottom: 5%;
+    margin-left: auto;
+    margin-right: auto;
+    width: 75%;
+  }
+
+  h3 {
+    margin-top: 20px;
+    margin-bottom: 2px;
+  }
+</style>

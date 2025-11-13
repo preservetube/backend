@@ -35,17 +35,17 @@ app.get('/savechannel', async ({ query: { url }, set, error }) => {
   }))
 })
 
+app.get('/about', async ({ set }) => {
+  set.headers['Content-Type'] = 'text/html; charset=utf-8'
+  return await m(eta.render('./about', { 
+    title: 'About (FAQ) | PreserveTube',
+  }))
+})
+
 app.get('/abuse', async ({ set }) => {
   set.headers['Content-Type'] = 'text/html; charset=utf-8'
   return await m(eta.render('./abuse', { 
     title: 'Abuse Report | PreserveTube',
-  }))
-})
-
-app.get('/dmca', async ({ set }) => {
-  set.headers['Content-Type'] = 'text/html; charset=utf-8'
-  return await m(eta.render('./dmca', { 
-    title: 'DMCA Takedown | PreserveTube',
   }))
 })
 

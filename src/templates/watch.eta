@@ -13,7 +13,7 @@
       <div class="report">
         <a href="abuse">[report abuse]</a>
         <div class="space"></div>
-        <a href="dmca">[dmca]</a>
+        <a href="about">[faq]</a>
       </div>
       
       <% if (it.transparency.length != 0) { %>
