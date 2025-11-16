@@ -16,7 +16,7 @@ const limiter = new RedisRateLimiter({
 })
 
 app.get('/search', async ({ headers, query: { search }, set, redirect, error }) => {
-  const hash = Bun.hash(headers['x-userip'] || headers['cf-connecting-ip'] || '0.0.0.0')
+  const hash = Bun.hash(headers['cf-connecting-ip'] || '0.0.0.0')
   const isLimited = await limiter.limit(hash.toString())
   if (isLimited) return error(429, 'You have been ratelimited.')
 
