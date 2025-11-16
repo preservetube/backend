@@ -25,13 +25,14 @@ async function uploadVideo(video: string) {
 }
 
 async function uploadImage(id: string, url: string) {
-  const exists = await images3.fileExists(`${id}.webp`)
-  if (exists) return `${keys.images[0].url}${id}.webp`
-
   const response = await fetch(url)
   const buffer = Buffer.from(await response.arrayBuffer())
+  const bufferHash = Bun.hash(buffer).toString()
 
-  const uploaded = await images3.put(`${id}.webp`, buffer)
+  const exists = await images3.fileExists(`${id}-${bufferHash}.webp`)
+  if (exists) return `${keys.images[0].url}${id}-${bufferHash}.webp`
+
+  const uploaded = await images3.put(`${id}-${bufferHash}.webp`, buffer)
   return uploaded.url.replace(keys.endpoint, 'https://s4.archive.party')
 }
 
