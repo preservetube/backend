@@ -1,4 +1,5 @@
 import { Elysia, t } from 'elysia';
+import { RedisRateLimiter } from 'rolling-rate-limiter'
 import * as fs from 'node:fs'
 
 import { db } from '@/utils/database'
@@ -12,6 +13,13 @@ import redis from '@/utils/redis';
 
 const app = new Elysia()
 const videoIds: Record<string, string> = {}
+
+const limiter = new RedisRateLimiter({
+  client: redis,
+  namespace: 'save:',
+  interval: 24 * 60 * 60000, // 24h
+  maxInInterval: 100
+})
 
 const sendError = (ws: any, message: string) => {
   ws.send(`ERROR - ${message}`);
@@ -79,6 +87,12 @@ app.ws('/save', {
       ws.send(`DONE - ${process.env.FRONTEND}/watch?v=${videoId}`)
       ws.close()
     } else {
+      const hash = Bun.hash(ws.data.headers['cf-connecting-ip'] || '0.0.0.0')
+      const isLimited = await limiter.limit(hash.toString())
+      if (isLimited) {
+        return sendError(ws, 'You have been ratelimited. </br>Is this an urgent archive? Please email me: admin@preservetube.com');
+      }
+
       ws.send('DATA - This process is automatic. Your video will start archiving shortly.')
       ws.send('CAPTCHA - Solving a cryptographic challenge before downloading.')
       videoIds[ws.id] = videoId
