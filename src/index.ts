@@ -15,8 +15,8 @@ app.use(transparency)
 app.use(video)
 app.use(websocket)
 app.use(html)
-app.onRequest(({ set, path }: any) => {
-  set.headers['Onion-Location'] = 'http://tubey5btlzxkcjpxpj2c7irrbhvgu3noouobndafuhbw4i5ndvn4v7qd.onion' + path
+app.onRequest(({ set, url }: any) => {
+  set.headers['Onion-Location'] = 'http://tubey5btlzxkcjpxpj2c7irrbhvgu3noouobndafuhbw4i5ndvn4v7qd.onion/' + url.split('/').at(-1)
 })
 
 process.on('uncaughtException', err => {
