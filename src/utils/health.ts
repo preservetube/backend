@@ -11,7 +11,7 @@ async function checkHealth() {
     }
   }))
 
-  console.log(`checked health status - ${Object.entries(healthStatus).map(h => `${h[0].split('-')[1].split('.')[0]} ${h[1]}`).join(', ')}`)
+  console.log(`checked health status - ${Object.entries(healthStatus).map(h => `${h[0]} ${h[1]}`).join(', ')}`)
 }
 
 checkHealth()
