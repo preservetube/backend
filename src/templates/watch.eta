@@ -218,6 +218,10 @@
   function initVideoLoading() {
     const video = document.getElementById('video-player');
     const loading = document.getElementById('video-loading');
+    let hasTheVideoErrored = false
+    const isIOSOrIPad = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
     if (!video || !loading) return;
     loading?.classList.remove("hidden");
 
@@ -239,10 +243,17 @@
     video.addEventListener('pointerdown', hide);
 
     video.addEventListener('error', () => {
+      hasTheVideoErrored = true 
       loading.innerHTML = 'Video failed to load.';
-      loading.innerHTML += '<p style="font-size: medium;">This is not supposed to happen. Please email me at admin@preservetube.com with as much debugging information.</p>' + 
-        '<p style="font-size: medium;">Please include your browser console logs. <a style="font-style: italic;" href="https://support.happyfox.com/kb/article/882-accessing-the-browser-console-and-network-logs/">' + 
-        'See here on how to access them.</a> Please note you might have to refresh the page for anything to show up.</p>'
+
+      if (isIOSOrIPad) {
+        loading.innerHTML += '<p style="font-size: medium;">It looks like you\'re on an iOS or iPadOS device. Apple devices without a hardware decoder can\'t play the kind of video Preservetube serves.</p>' +
+          '<p style="font-size: medium;">Please try using a different device.</p>'
+      } else {
+        loading.innerHTML += '<p style="font-size: medium;">This is not supposed to happen. Please email me at admin@preservetube.com with as much debugging information.</p>' + 
+          '<p style="font-size: medium;">Please include your browser console logs. <a style="font-style: italic;" href="https://support.happyfox.com/kb/article/882-accessing-the-browser-console-and-network-logs/">' + 
+          'See here on how to access them.</a> Please note you might have to refresh the page for anything to show up.</p>'
+      }
     });
 
     // video already has data (i.e. cached)
@@ -251,7 +262,7 @@
     // add an extra message after 10s
     const FALLBACK_MS = 10000;
     const fallbackTimer = setTimeout(() => {
-      if (!loading.classList.contains('hidden')) {
+      if (!loading.classList.contains('hidden') && !hasTheVideoErrored) {
         loading.innerHTML = 'Taking longer than usual to load...';
         loading.innerHTML += '<p style="font-size: medium;">This might be due one of multiple reasons:</p>'
           + '<ol style="font-size: medium;"><li>This video is large. Depending on your browser, it might try loading the full thing at one time, which will slow things down.</li>'

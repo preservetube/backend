@@ -21,6 +21,10 @@
   const h3 = document.getElementById("bottom")
   const captcha = document.getElementById("captcha")
 
+  ws.onopen = function () {
+    document.querySelector("footer").innerHTML = `page rendered by <code><%= hostname %></code>, connected via <code>${websocket.split('-')[1].split('.')[0]}</code>`
+  }
+
   ws.onmessage = function (msg) {
     const text = msg.data.split(' - ').slice(1).join(' - ')
 
