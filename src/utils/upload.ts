@@ -6,16 +6,14 @@ const videos3 = new S3({
   endpoint: keys.endpoint,
   accessKeyId: keys.videos[0].access,
   secretAccessKey: keys.videos[0].secret,
-  bucketName: keys.videos[0].bucket,
-  region: 'garage'
+  bucketName: keys.videos[0].bucket
 })
 
 const images3 = new S3({
   endpoint: keys.endpoint,
   accessKeyId: keys.images[0].access,
   secretAccessKey: keys.images[0].secret,
-  bucketName: keys.images[0].bucket,
-  region: 'garage'
+  bucketName: keys.images[0].bucket
 });
 
 async function uploadVideo(video: string) {
