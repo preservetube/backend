@@ -4,7 +4,7 @@
   <% it.videos.forEach(function(v){ %>
     <div class="video">
       <a href="/watch?v=<%= v.id %>">
-        <img class="thumbnail" src="<%= v.thumbnail %>" />
+        <img class="thumbnail" src="<%= v.thumbnail %>" loading="lazy" />
         <div class="title"><%= v.title %></div>
         <div class="date">
           Published on <%= v.published %>
