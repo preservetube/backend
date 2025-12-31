@@ -6,8 +6,8 @@
   <% }) %>
 </div>
 
-<style> 
-  .grid { 
+<style>
+  .grid {
     margin-top: 10px;
     margin-bottom: 10px;
     text-align: center;
@@ -16,6 +16,6 @@
   .title {
     font-size: larger;
     font-weight: 600;
-    display: inline-block;
+    display: block;
   }
 </style>

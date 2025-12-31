@@ -15,6 +15,7 @@ app.get('/transparency', async ({ set }) => {
 
   const reports = await db.selectFrom('reports')
     .selectAll()
+    .orderBy('date desc')
     .execute()
 
   const html = await m(eta.render('./transparency', { 
