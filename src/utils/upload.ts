@@ -9,6 +9,7 @@ async function uploadVideo(video: string) {
     },
     body: await Bun.file(video).arrayBuffer()
   })
+  if (!uploaded.ok) throw new Error(`failed to upload video - ${uploaded.status} (${uploaded.statusText})`)
   return uploaded.url.replace(keys.endpoint, 'https://s4.archive.party')
 }
 
