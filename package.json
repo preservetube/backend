@@ -27,7 +27,6 @@
     "kysely": "^0.27.4",
     "pg": "^8.13.1",
     "readable-to-ms": "^1.0.3",
-    "rolling-rate-limiter": "^0.4.2",
-    "ultralight-s3": "^0.0.7"
+    "rolling-rate-limiter": "^0.4.2"
   }
 }
