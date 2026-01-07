@@ -30,7 +30,7 @@ async function uploadImage(id: string, url: string) {
     headers: {
       'x-authtoken': keys.videos[0].secret
     },
-    body: await response.arrayBuffer()
+    body: arrayBuffer
   })
   return uploaded.url.replace(keys.endpoint, 'https://s4.archive.party')
 }
