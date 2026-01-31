@@ -6,6 +6,8 @@ Disallow: /user/*
 Disallow: /shorts/*
 Disallow: /c/*
 Disallow: /@*
+Disallow: /search
+Disallow: /search?search=*
 
 # seo backlink bots are a waste of bandwidth
 User-agent: dotbot
