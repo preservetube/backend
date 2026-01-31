@@ -38,4 +38,19 @@ Disallow: /
 User-Agent: ImagesiftBot 
 Disallow: / 
 
+# ai crawler for alexa... who uses alexa.
+User-agent: Amazonbot
+Disallow: /
+
+# apple does not know how to behave.
+User-agent: Applebot
+Disallow: /
+
+User-agent: Applebot-Extended  
+Disallow: /
+
+# the crawling rate is simply insane
+User-agent: Bingbot
+Crawl-delay: 2
+
 Sitemap: https://api.preservetube.com/sitemap.xml
