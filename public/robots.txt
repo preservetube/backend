@@ -46,6 +46,12 @@ Disallow: /
 User-agent: facebookexternalhit
 Disallow: /
 
+User-Agent: MJ12bot
+Disallow: /
+
+User-agent: Owler
+Disallow: /
+
 # ai crawler for alexa... who uses alexa.
 User-agent: Amazonbot
 Disallow: /
