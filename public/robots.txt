@@ -40,6 +40,12 @@ Disallow: /
 User-Agent: ImagesiftBot 
 Disallow: / 
 
+User-agent: DataForSeoBot
+Disallow: /
+
+User-agent: facebookexternalhit
+Disallow: /
+
 # ai crawler for alexa... who uses alexa.
 User-agent: Amazonbot
 Disallow: /
