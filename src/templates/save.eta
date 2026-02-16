@@ -1,6 +1,30 @@
 <% layout('./layout') %>
-<div class="sorry">
+<% /* <div class="sorry">
 	Saving videos should be stable again. Will try some more experiments in the coming days.
+</div> */ %>
+
+<div id="backdrop" style="display: none;">
+  <div id="save-intro-dialog">
+    <div class="hd">Please read before your first save</div>
+    <div class="bd">
+      <p>
+        You are using PreserveTube to archive a video, not to casually download or proxy YouTube.
+      </p>
+      <p>
+        When you save here, the file is actually stored on PreserveTube infrastructure. Think of it like deciding to keep a file on your own hard drive.
+      </p>
+      <ol>
+        <li>Only save videos that should be preserved as part of internet history.</li>
+        <li>Do not use this as a normal YouTube viewing proxy or bulk downloader.</li>
+        <li>Please only archive videos you feel are genuinely worth preserving long-term.</li>
+      </ol>
+      <p>By continuing, you agree to use PreserveTube in that spirit.</p>
+      <div class="intro-footer">
+        <button id="decline-instructions" type="button">Cancel</button>
+        <button id="accept-instructions" type="button" disabled>Continue (3s)</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="logs" class="logs">
@@ -16,45 +40,106 @@
   const url = "<%= it.url %>"
   const websocket = "<%= it.websocket %>"
   const sitekey = "<%= it.sitekey %>"
-  const ws = new WebSocket(`${websocket}/save?url=${encodeURIComponent(url)}`)
+  let ws = null
+  const hasSeenSaveInstructionsKey = "preservetube-save-instructions-seen"
   const h1 = document.getElementById("title")
   const h3 = document.getElementById("bottom")
   const captcha = document.getElementById("captcha")
+  const backdrop = document.getElementById("backdrop")
+  const acceptInstructions = document.getElementById("accept-instructions")
+  const declineInstructions = document.getElementById("decline-instructions")
 
-  ws.onopen = function () {
-    document.querySelector("footer").innerHTML = `page rendered by <code><%= hostname %></code>, connected via <code>${websocket.split('-')[1].split('.')[0]}</code>`
-  }
+  function startSaveFlow() {
+    ws = new WebSocket(`${websocket}/save?url=${encodeURIComponent(url)}`)
 
-  ws.onmessage = function (msg) {
-    const text = msg.data.split(' - ').slice(1).join(' - ')
-
-    if (msg.data == 'ERROR - Missing URL' || msg.data == 'ERROR - Whoops! What is that? That is not a Youtube url.') {
-      h1.innerHTML = text
-      return
-    } else if (msg.data.startsWith('CAPTCHA -')) {
-      captcha.style.display = 'block'
-      turnstile.render('#captcha', {
-        sitekey: sitekey,
-        callback: function(token) {
-          captcha.remove()
-          ws.send(token)
-        },
-      })
-    } else if (msg.data.startsWith('DONE -')) {
-      window.location.href = text
+    ws.onopen = function () {
+      document.querySelector("footer").innerHTML = `page rendered by <code><%= hostname %></code>, connected via <code>${websocket.split('-')[1].split('.')[0]}</code>`
     }
 
-    h3.innerHTML = `${h1.innerHTML}<br>${h3.innerHTML}`
-    h1.innerHTML = text
+    ws.onmessage = function (msg) {
+      const text = msg.data.split(' - ').slice(1).join(' - ')
+
+      if (msg.data == 'ERROR - Missing URL' || msg.data == 'ERROR - Whoops! What is that? That is not a Youtube url.') {
+        h1.innerHTML = text
+        return
+      } else if (msg.data.startsWith('CAPTCHA -')) {
+        captcha.style.display = 'block'
+        turnstile.render('#captcha', {
+          sitekey: sitekey,
+          callback: function(token) {
+            captcha.remove()
+            ws.send(token)
+          },
+        })
+      } else if (msg.data.startsWith('DONE -')) {
+        window.location.href = text
+      }
+
+      h3.innerHTML = `${h1.innerHTML}<br>${h3.innerHTML}`
+      h1.innerHTML = text
+    }
+
+    ws.onclose = function (event) {
+      h3.innerHTML = `Websocket connection was closed: ${event.reason} (${event.code})<br>${h3.innerHTML}`
+    }
   }
 
-  ws.onclose = function (event) {
-    h3.innerHTML = `Websocket connection was closed: ${event.reason} (${event.code})<br>${h3.innerHTML}`
-  } 
+  function runFirstSaveGate() {
+    let hasSeenInstructions = false
+    try {
+      hasSeenInstructions = localStorage.getItem(hasSeenSaveInstructionsKey) == "1"
+    } catch {
+      hasSeenInstructions = false
+    }
+
+    if (hasSeenInstructions) {
+      startSaveFlow()
+      return
+    }
+
+    backdrop.style.display = "block"
+    let secondsRemaining = 3
+    const timer = setInterval(() => {
+      secondsRemaining -= 1
+      if (secondsRemaining <= 0) {
+        clearInterval(timer)
+        acceptInstructions.disabled = false
+        acceptInstructions.innerText = "Continue"
+        return
+      }
+
+      acceptInstructions.innerText = `Continue (${secondsRemaining}s)`
+    }, 1000)
+
+    acceptInstructions.addEventListener("click", () => {
+      try {
+        localStorage.setItem(hasSeenSaveInstructionsKey, "1")
+      } catch {
+      }
+
+      backdrop.remove()
+      startSaveFlow()
+    })
+
+    declineInstructions.addEventListener("click", () => {
+      if (window.history.length > 1) {
+        window.history.back()
+        return
+      }
+
+      window.location.href = "/"
+    })
+  }
 
   setInterval(() => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      return
+    }
+
     ws.send('alive')
   }, 2000)
+
+  runFirstSaveGate()
 </script>
 
 <style>
@@ -68,6 +153,85 @@
 		padding-bottom: 5px;
 		text-align: center;
 	}
+
+  #backdrop {
+    display: block;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 9998;
+    background-color: rgba(128, 128, 128, 0.5);
+    text-align: center;
+    backdrop-filter: blur(1px);
+  }
+
+  #save-intro-dialog {
+    border: 2px dashed #dab75e;
+    position: absolute;
+    top: 6vh;
+    left: 50%;
+    width: min(620px, calc(100vw - 32px));
+    max-height: 86vh;
+    transform: translateX(-50%);
+    box-shadow: 2px 2px 0 1px rgba(0, 0, 0, 0.1);
+    background: #fffbef;
+    color: #000;
+    text-align: left;
+    overflow: hidden;
+    z-index: 9999;
+  }
+
+  #save-intro-dialog .hd {
+    border: none;
+    padding: 10px 14px 8px 14px;
+    line-height: 1.2em;
+    background: #fff2cf;
+    color: #3b3221;
+    font-size: 1.08rem;
+    font-weight: bold;
+    border-bottom: 2px dashed #dab75e;
+  }
+
+  #save-intro-dialog .bd {
+    padding: 10px 12px;
+    max-height: calc(86vh - 60px);
+    overflow-y: auto;
+    line-height: 1.32;
+    font-size: 0.96rem;
+  }
+
+  #save-intro-dialog .bd p {
+    margin: 0 0 8px 0;
+  }
+
+  #save-intro-dialog li {
+    display: list-item;
+    list-style: decimal inside;
+    margin-bottom: 4px;
+  }
+
+  .intro-footer {
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .intro-footer button {
+    margin: 0 5px;
+    font-family: inherit;
+    font-size: 14px;
+    border: 1px solid #808080;
+    background: #fff;
+    color: #3b3221;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+
+  .intro-footer button:disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+  }
   
   .logs {
     text-align: center;
