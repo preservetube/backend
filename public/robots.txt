@@ -46,6 +46,9 @@ Disallow: /
 User-agent: facebookexternalhit
 Disallow: /
 
+User-agent: meta-externalagent
+Disallow: /
+
 User-Agent: MJ12bot
 Disallow: /
 
