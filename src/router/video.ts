@@ -26,17 +26,30 @@ app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
     return cached
   }
 
-  if (!v.match(/[\w\-_]{11}/)) return error(404)
+  const idMatch = v.match(/^([\w\-_]{11})(?:-(\d+))?$/)
+  if (!idMatch) return error(404)
 
-  const json = await db.selectFrom('videos')
+  const baseId = idMatch[1];
+  const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const allowedVersionPattern = new RegExp(`^${escapeRegex(baseId)}(?:-\\d+)?$`);
+
+  const videoVersions = (await db.selectFrom('videos')
     .selectAll()
-    .where('id', '=', v)
-    .executeTakeFirst()
+    .where('id', 'like', `${baseId}%`)
+    .execute())
+    .filter(video => allowedVersionPattern.test(video.id))
+    .sort((a, b) => {
+      const aVersion = Number(a.id.slice(baseId.length + 1) || 1);
+      const bVersion = Number(b.id.slice(baseId.length + 1) || 1);
+      return aVersion - bVersion;
+    });
+
+  const json = videoVersions.find(video => video.id === v) || videoVersions[0];
 
   if (!json) {
     const html = await m(eta.render('./watch', { 
       isMissing: true,
-      id: v,
+      id: baseId,
       title: 'Video Not Found | PreserveTube',
       manualAnalytics: true
     }))
@@ -45,13 +58,13 @@ app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
     set.headers['content-type'] = 'text/html; charset=utf-8'
     return error(404, html)
   }
-  if (json.disabled) return redirect(`/transparency/${v}`)
+  if (json.disabled) return redirect(`/transparency/${json.id}`)
 
   let transparency: any[] = []
   if (json.hasBeenReported) {
     transparency = await db.selectFrom('reports')
       .selectAll()
-      .where('target', '=', v)
+      .where('target', '=', json.id)
       .execute()
   }
 
@@ -85,6 +98,11 @@ app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
 
   const html = await m(eta.render('./watch', { 
     transparency,
+    versions: videoVersions.map(video => ({
+      id: video.id,
+      archived: video.archived
+    })),
+    baseId,
     ...json,
     description: DOMPurify.sanitize(json.description),
     title: `${json.title} | PreserveTube`,

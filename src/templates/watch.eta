@@ -11,9 +11,27 @@
   <div class="content-wrapper">
     <div class="main-content">
       <div class="report">
-        <a href="abuse">[report abuse]</a>
-        <div class="space"></div>
-        <a href="about">[faq]</a>
+        <% if (it.versions && it.versions.length > 1) { %>
+          <div class="version-picker">
+            <label for="version-select">Version:</label>
+            <select
+              id="version-select"
+              onchange="window.location.href = '/watch?v=' + this.value"
+            >
+              <% it.versions.forEach(function(version, index){ %>
+                <option value="<%= version.id %>" <%= version.id === it.id ? 'selected' : '' %>>
+                  v<%= version.id.slice(it.baseId.length + 1) || '1' %> (archived <%= version.archived %>)
+                </option>
+              <% }) %>
+            </select>
+          </div>
+        <% } else { %>
+          <div></div>
+        <% } %>
+        <div class="report-links">
+          <a href="abuse">[report abuse]</a>
+          <a href="about">[faq]</a>
+        </div>
       </div>
       
       <% if (it.transparency.length != 0) { %>
@@ -76,13 +94,16 @@
   }
 
   .report {
-    text-align: right;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
     margin-top: 5px;
   }
 
-  .space {
-    display: inline-block;
-    width: 0.5%;
+  .report-links {
+    display: flex;
+    gap: 0.5rem;
   }
 
   video {
@@ -152,6 +173,17 @@
   .reports-title {
     font-size: large;
     font-weight: 600;
+  }
+
+  .version-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .version-picker select {
+    font: inherit;
+    padding: 0.2rem 0.4rem;
   }
 
   .video-wrapper {
