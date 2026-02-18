@@ -116,7 +116,16 @@ app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
   return html
 })
 
-app.get('/video/:id', async ({ params: { id }, error }) => {
+function hasIdentifyingUA(req: Request): boolean {
+  const ua = req.headers.get('user-agent') ?? '';
+  return /^[^\s]+\/[\d.]+ \([^)]+\)$/.test(ua);
+}
+
+app.get('/video/:id', async ({ request, params: { id }, error }) => {
+  const isNice = hasIdentifyingUA(request)
+  if (!isNice) return `This endpoint is provided for people that prefer not to scrape, and depends on your honesty.
+Please identify yourself with a User-Agent in the format: AppName/1.0 (a way for me to contact you, or a brief explanation of what you're doing).`
+
   const cached = await redis.get(`video:${id}`)
   if (cached) return JSON.parse(cached)
 
