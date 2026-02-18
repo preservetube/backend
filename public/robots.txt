@@ -70,6 +70,10 @@ Disallow: /
 User-agent: Bingbot
 Crawl-delay: 2
 
+User-agent: GPTBot
+Crawl-delay: 2
+
+
 # this is intentionally only accessable for search engine crawlers. 
 # do you want to crawl too? get in touch https://preservetube.com/about
 Sitemap: https://api.preservetube.com/sitemap.xml
