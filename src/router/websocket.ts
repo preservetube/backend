@@ -18,7 +18,7 @@ const limiter = new RedisRateLimiter({
   client: redis,
   namespace: 'save:',
   interval: 24 * 60 * 60000, // 24h
-  maxInInterval: 100
+  maxInInterval: 50
 })
 
 const sendError = (ws: any, message: string) => {
