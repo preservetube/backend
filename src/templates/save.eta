@@ -21,7 +21,7 @@
       <p>By continuing, you agree to use PreserveTube in that spirit.</p>
       <div class="intro-footer">
         <button id="decline-instructions" type="button">Cancel</button>
-        <button id="accept-instructions" type="button" disabled>Continue (3s)</button>
+        <button id="accept-instructions" type="button" disabled>Continue (7s)</button>
       </div>
     </div>
   </div>
@@ -35,13 +35,12 @@
   </h3>
 </div>
 
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 <script>
   const url = "<%= it.url %>"
   const websocket = "<%= it.websocket %>"
   const sitekey = "<%= it.sitekey %>"
   let ws = null
-  const hasSeenSaveInstructionsKey = "preservetube-save-instructions-seen"
   const h1 = document.getElementById("title")
   const h3 = document.getElementById("bottom")
   const captcha = document.getElementById("captcha")
@@ -64,7 +63,7 @@
         return
       } else if (msg.data.startsWith('CAPTCHA -')) {
         captcha.style.display = 'block'
-        turnstile.render('#captcha', {
+        hcaptcha.render(captcha, {
           sitekey: sitekey,
           callback: function(token) {
             captcha.remove()
@@ -85,20 +84,21 @@
   }
 
   function runFirstSaveGate() {
-    let hasSeenInstructions = false
+    const today = new Date().toISOString().split('T')[0]
+    let lastDisclaimerDate = null
     try {
-      hasSeenInstructions = localStorage.getItem(hasSeenSaveInstructionsKey) == "1"
+      lastDisclaimerDate = localStorage.getItem("last-shown-disclaimer")
     } catch {
-      hasSeenInstructions = false
+      lastDisclaimerDate = null
     }
 
-    if (hasSeenInstructions) {
+    if (lastDisclaimerDate === today) {
       startSaveFlow()
       return
     }
 
     backdrop.style.display = "block"
-    let secondsRemaining = 3
+    let secondsRemaining = 7
     const timer = setInterval(() => {
       secondsRemaining -= 1
       if (secondsRemaining <= 0) {
@@ -113,7 +113,7 @@
 
     acceptInstructions.addEventListener("click", () => {
       try {
-        localStorage.setItem(hasSeenSaveInstructionsKey, "1")
+        localStorage.setItem("last-shown-disclaimer", today)
       } catch {
       }
 
