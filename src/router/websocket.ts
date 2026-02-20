@@ -107,8 +107,10 @@ app.ws('/save', {
     if (await redis.get(videoId) !== 'downloading') {
       await redis.set(videoId, 'downloading', 'EX', 300)
 
-      if (!(await checkCaptcha(message))) {
+      const captchaCheck = await checkCaptcha(message, ws.data.headers['cf-connecting-ip'] || '0.0.0.0')
+      if (!captchaCheck.success) {
         await cleanup(ws, videoId);
+        console.log(`captcha failed for ${videoId} - ${JSON.stringify(captchaCheck)}`)
         return sendError(ws, 'Captcha validation failed.');
       } else {
         ws.send('DATA - Captcha validated. Starting download...');
@@ -158,8 +160,11 @@ app.ws('/savechannel', {
     if (!status || !status.startsWith('captcha-')) return sendError(ws, 'No channel associated with this session.');
 
     const channelId = status.replace('captcha-', '');
-    if (!(await checkCaptcha(message))) {
+    const captchaCheck = await checkCaptcha(message, ws.data.headers['cf-connecting-ip'] || '0.0.0.0')
+
+    if (!captchaCheck.success) {
       await cleanup(ws, channelId);
+      console.log(`captcha failed for ${channelId} - ${JSON.stringify(captchaCheck)}`)
       return sendError(ws, 'Captcha validation failed.');
     } else {
       ws.send('DATA - Captcha validated. Starting download...');

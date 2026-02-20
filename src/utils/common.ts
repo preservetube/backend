@@ -36,19 +36,21 @@ function convertRelativeToDate(relativeTime: string) {
   return currentDate;
 }
 
-async function checkCaptcha(response: string) {
-  const confirm = await (await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+async function checkCaptcha(response: string, remoteIp: string): any {
+  const confirm = await (await fetch('https://api.hcaptcha.com/siteverify', {
     method: 'POST',
-    body: JSON.stringify({
+    body: new URLSearchParams({
       'response': response,
-      'secret': process.env.CAPTCHA_SECRET
+      'secret': process.env.CAPTCHA_SECRET!,
+      'remoteip': remoteIp,
+      'sitekey': process.env.SITEKEY!
     }),
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/x-www-form-urlencoded'
     }
   })).json()
 
-  return confirm.success
+  return confirm
 }
 
 async function createDatabaseVideo(id: string, videoUrl: string) {
