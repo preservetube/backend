@@ -25,7 +25,8 @@ export interface VideosTable {
   channelAvatar: string
   playlist?: string | null
   disabled: boolean
-  hasBeenReported: boolean
+  hasBeenReported: boolean,
+  deletion_stage: 'pending_delete' | 'soft_delete' | 'deleted' | null
 }
 
 export type Video = Selectable<VideosTable>

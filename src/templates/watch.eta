@@ -42,10 +42,29 @@
           <% }) %>
         </div>
       <% } %>
+      
+      <% if (it.deletion_stage === 'pending_delete') { %>
+        <div class="deletion-banner pending">
+          <span class="deletion-title">Heads up — this video is scheduled for deletion.</span>
+          <p>Got questions or think this is a mistake? Drop me an email at <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.</p>
+        </div>
+      <% } %>
     
       <div class="video-wrapper">
-        <div class="video-loading hidden" id="video-loading">Loading...</div>
-        <video id="video-player" src="<%= it.source %>" poster="<%= it.thumbnail %>" controls preload="metadata"></video>
+        <% if (it.deletion_stage === 'soft_delete') { %>
+          <div class="video-placeholder soft-delete">
+            <p>This video has been moved to cold storage and will be permanently deleted soon.</p>
+            <p class="deletion-note">If you'd like to retrieve it, email me at <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.</p>
+          </div>
+        <% } else if (it.deletion_stage === 'deleted') { %>
+          <div class="video-placeholder deleted">
+            <p>This video has been removed.</p>
+            <p class="deletion-note">Storage is limited, so I occasionally clear out things like 10-hour blank screens and similar content.</p>
+          </div>
+        <% } else { %>
+          <div class="video-loading hidden" id="video-loading">Loading...</div>
+          <video id="video-player" src="<%= it.source %>" poster="<%= it.thumbnail %>" controls preload="metadata"></video>
+        <% } %>
       </div>
       <h1><%= it.v_title %></h1>
     
@@ -220,6 +239,71 @@
     pointer-events: none;
   }
 
+  .deletion-banner {
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 0.5rem;
+  }
+
+  .deletion-banner.pending {
+    background-color: #ffe0e0;
+    border: 2px dashed #ff6b6b;
+  }
+
+  .deletion-title {
+    font-size: large;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .deletion-banner p {
+    margin: 0;
+    font-size: medium;
+  }
+
+  .deletion-banner a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
+  .video-placeholder {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+    margin-top: 5px;
+    box-sizing: border-box;
+    border-radius: 4px;
+  }
+
+  .video-placeholder.soft-delete {
+    background-color: #fbf6e3;
+    border: 2px dashed #ffc107;
+  }
+
+  .video-placeholder.deleted {
+    background-color: #f6e8e9;
+    border: 2px dashed #dc3545;
+  }
+
+  .video-placeholder p {
+    font-size: 1.2rem;
+    margin: 0.5rem 0;
+    max-width: 80%;
+  }
+
+  .video-placeholder .deletion-note {
+    font-size: 1rem;
+    color: #666;
+    margin-top: 1rem;
+  }
+
   @media (max-width: 1100px) {
     h1 {
     font-size: 1.65em;
@@ -250,12 +334,13 @@
   function initVideoLoading() {
     const video = document.getElementById('video-player');
     const loading = document.getElementById('video-loading');
-    let hasTheVideoErrored = false
-    const isIOSOrIPad = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
     if (!video || !loading) return;
     loading?.classList.remove("hidden");
+
+    let hasTheVideoErrored = false
+    const isIOSOrIPad = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
     const hide = () => {
       if (!loading.classList.contains('hidden')) {
