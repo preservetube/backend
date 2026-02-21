@@ -21,9 +21,9 @@ const limiter = new RedisRateLimiter({
   maxInInterval: 50
 })
 
-const sendError = (ws: any, message: string) => {
+const sendError = (ws: any, message: string, close: boolean = true) => {
   ws.send(`ERROR - ${message}`);
-  ws.close();
+  if (close) ws.close();
 };
 
 const cleanup = async (ws: any, videoId: string) => {
@@ -65,6 +65,18 @@ const handleUpload = async (ws: any, videoId: string, isChannel: boolean = false
   }
 };
 
+const getRateLimitKey = (ip: string): string => {
+  if (!ip || ip === '0.0.0.0') return ip;
+  if (ip.includes(':')) {
+    const parts = ip.split(':');
+    if (parts.length >= 3) {
+      return `${parts[0]}:${parts[1]}:${parts[2]}`;
+    }
+    return ip;
+  }
+  return ip;
+};
+
 app.ws('/save', {
   query: t.Object({
     url: t.String()
@@ -87,7 +99,7 @@ app.ws('/save', {
       ws.send(`DONE - ${process.env.FRONTEND}/watch?v=${videoId}`)
       ws.close()
     } else {
-      const hash = Bun.hash(ws.data.headers['cf-connecting-ip'] || '0.0.0.0')
+      const hash = Bun.hash(getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'))
       const isLimited = await limiter.limit(hash.toString())
       if (isLimited) {
         return sendError(ws, 'You have been ratelimited. </br>Is this an urgent archive? Please email me: admin@preservetube.com');
@@ -181,6 +193,13 @@ app.ws('/savechannel', {
         .where('id', '=', video.video_id)
         .executeTakeFirst()
       if (already) continue
+
+      const hash = Bun.hash(getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'))
+      const isLimited = await limiter.limit(hash.toString())
+      if (isLimited) {
+        sendError(ws, 'You have been ratelimited. </br>Is this an urgent archive? Please email me: admin@preservetube.com', false);
+        break;
+      }
 
       ws.send(`DATA - Processing video: ${video.title.text}`);
       await redis.set(video.video_id, 'downloading', 'EX', 300);
