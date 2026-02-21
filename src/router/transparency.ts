@@ -53,5 +53,30 @@ app.get('/transparency/:id', async ({ params: { id }, set, error }) => {
   return html
 })
 
+
+app.get('/deletion', async ({ set }) => {
+  const cached = await redis.get('deletion:html')
+  if (cached) {
+    set.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return cached
+  }
+
+  const deletionVideos = await db.selectFrom('videos')
+    .where('deletion_stage', 'is not', null)
+    .selectAll()
+    .execute()
+    
+  const html = await m(eta.render('./deletion', { 
+    title: 'Deletion Log | PreserveTube',
+    pendingDelete: deletionVideos.filter(v => v.deletion_stage === 'pending_delete'),
+    softDelete: deletionVideos.filter(v => v.deletion_stage === 'soft_delete'),
+    deleted: deletionVideos.filter(v => v.deletion_stage === 'deleted'),
+  }))
+  await redis.set('deletion:html', html, 'EX', 3600)
+
+  set.headers['Content-Type'] = 'text/html; charset=utf-8'
+  return html
+})
+
 app.onError(error)
 export default app

@@ -1,0 +1,135 @@
+<% layout('./layout') %>
+
+<div class="page">
+  <p style="margin-top: 1rem;">
+    To help preserve storage, PreserveTube will start removing videos that serve little to no purpose -- things like blank screens, timers, and relaxation music; anything that could be computer-generated without any human involvement. That said, every video will be reviewed manually before deletion, so nothing gets removed without a proper look.
+  </p>
+
+  <p style="margin-top: 1rem;">
+    The deletion process goes through three stages:
+  </p>
+  <ul>
+    <li><b>pending_delete</b>: The video has been flagged as a candidate for deletion. It'll stay in this stage for ~a week, so if anyone has concerns, there's plenty of time to contest it.</li>
+    <li><b>soft_delete</b>: The video is moved to cold storage, meaning it won't be viewable on the site anymore -- but it's still recoverable.</li>
+    <li><b>deleted</b>: The video is permanently removed.</li>
+  </ul>
+
+  <p style="margin-top: 1rem;">
+    All videos that are in any stage of deletion are displayed below for the sake of transparency. If you see a video that you think shouldn't be deleted, please <a class="a" href="/about">email me</a> with the video link and an explanation of why you think it should be preserved.
+  </p>
+
+  <% if (it.pendingDelete.length != 0) { %>
+    <h2 class="stage-header">
+      pending_delete
+      <span class="stage-desc">Videos queued for deletion but not yet processed. If you'd like to contest this, <a class="a" href="/about">email me</a>.</span>
+    </h2>
+    <div class="container">
+      <% it.pendingDelete.forEach(function(v){ %>
+        <a href="https://youtube.com/watch?v=<%= v.id %>">
+          <div class="video">
+            <img src="<%= v.thumbnail %>" class="video__thumbnail">
+            <div>
+              <h3><%= v.title %></h3>
+              <p class="video__channel"><%= v.channel %></p>
+            </div>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <% if (it.softDelete.length != 0) { %>
+    <h2 class="stage-header">
+      soft_delete
+      <span class="stage-desc">Videos marked as deleted but still recoverable.</span>
+    </h2>
+    <div class="container">
+      <% it.softDelete.forEach(function(v){ %>
+        <a href="https://youtube.com/watch?v=<%= v.id %>">
+          <div class="video">
+            <img src="<%= v.thumbnail %>" class="video__thumbnail">
+            <div>
+              <h3><%= v.title %></h3>
+              <p class="video__channel"><%= v.channel %></p>
+            </div>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+  
+
+  <% if (it.deleted.length != 0) { %>
+    <h2 class="stage-header">
+      deleted
+      <span class="stage-desc">Videos permanently removed.</span>
+    </h2>
+    <div class="container">
+      <% it.deleted.forEach(function(v){ %>
+        <a href="https://youtube.com/watch?v=<%= v.id %>">
+          <div class="video">
+            <img src="<%= v.thumbnail %>" class="video__thumbnail">
+            <div>
+              <h3><%= v.title %></h3>
+              <p class="video__channel"><%= v.channel %></p>
+            </div>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+
+<style>
+  .page {
+    margin: 0 auto;
+    padding: 5px 10px 10px;
+    width: 65%;
+  }
+
+  .stage-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .stage-desc {
+    font-size: 0.9rem;
+    font-weight: normal;
+    color: #aaa;
+  }
+
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .video {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .video__thumbnail {
+    width: 160px;
+    flex-shrink: 0;
+  }
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 1.1rem;
+  }
+
+  .video__channel {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #aaa;
+  }
+
+  .a {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+  }
+</style>
