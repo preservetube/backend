@@ -35,7 +35,7 @@
   </h3>
 </div>
 
-<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>
   const url = "<%= it.url %>"
   const websocket = "<%= it.websocket %>"
@@ -63,7 +63,7 @@
         return
       } else if (msg.data.startsWith('CAPTCHA -')) {
         captcha.style.display = 'block'
-        hcaptcha.render(captcha, {
+        turnstile.render('#captcha', {
           sitekey: sitekey,
           callback: function(token) {
             captcha.remove()
