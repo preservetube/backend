@@ -28,7 +28,7 @@
     <br><br>
 
     <div class="title">Video Saving</div>
-    Saving videos is mostly anonymous. Your IP is not associated with saved videos in our database. Although, like for all requests, your IP and headers are temporarily logged, but not stored permanently.
+    Saving videos is mostly anonymous. Your partial IP address (last part removed) and headers are temporarily logged like any request, but are not stored permanently and not associated with saved videos.
     <br><br>
 
     <div class="title">Questions?</div>
