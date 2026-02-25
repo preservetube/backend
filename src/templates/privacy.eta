@@ -2,7 +2,7 @@
 
 <div class="text">
   <div class="part">
-    <strong>Last updated:</strong> 2025-08-16
+    <strong>Last updated:</strong> 2026-02-25
   </div>
 
   <div class="part">
@@ -12,9 +12,8 @@
     <br><br>
 
     <div class="title">Reverse Proxying</div>
-    We use <a href="https://caddyserver.com/">Caddy</a> to reverse proxy our services. On certain ocassions, such as when errors occur in requests,
-    Caddy might log these. These logs include headers, client IPs, and paths. Otherwise, our Caddy setup does not log any requests. <br><br>
-    Logs are purged automatically once the file size reaches 50MB.
+    We use <a href="https://caddyserver.com/">Caddy</a> and <a href="https://nginx.org/">nginx</a> to reverse proxy our services. All requests are logged. These logs include headers, client IPs, and paths. <br><br>
+    Logs are retained to act against abuse, and are purged once they reach 100MB.
     <br><br>
 
     <div class="title">DDoS Protection</div>
@@ -29,7 +28,7 @@
     <br><br>
 
     <div class="title">Video Saving</div>
-    Saving videos is completly anonymous. We do not log who saved a video.
+    Saving videos is mostly anonymous. Your IP is not associated with saved videos in our database. Although, like for all requests, your IP and headers are temporarily logged, but not stored permanently.
     <br><br>
 
     <div class="title">Questions?</div>
