@@ -130,6 +130,10 @@ app.ws('/save', {
       }
 
       const data = await getVideo(videoId)
+      if (data.error) {
+        return sendError(ws, 'Unable to retrieve video info from YouTube. Please try again later.')
+      }
+
       const slopScore = await parseSlop(videoId, data.videoDetails.title, 
         (data.microformat.playerMicroformatRenderer.description?.simpleText || '').replaceAll('\n', '<br>'))
       
