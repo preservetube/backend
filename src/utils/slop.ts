@@ -29,7 +29,7 @@ Use these as intuition guides, not a checklist. Weight them by how many stack to
 - **Pipe separators** (|) splitting title into the classic pattern of caption | source | song — only a signal when used to stack multiple slop elements (e.g. character | show | slowed song). A single pipe for emphasis or listing does not count.
 - **4K / [4K] tag** — almost always slop when paired with anything else.
 - **"Edit" / "OneShot" / "Morphosis"** suffix or delimiter usage (║ Edit ║, 「Edit」).
-- **Slowed / Reverb / Slowed+Reverb / MONTAGEM** — audio slop markers.
+- **Slowed / Reverb / Slowed+Reverb / MONTAGEM** — not a signal on its own. Only counts when stacked with other slop signals.
 - **Known slop franchises:** Johnny English, Mr. Bean, Breaking Bad, Peaky Blinders, American Psycho, Patrick Bateman, The Boys, Homelander, Dexter, Joe Goldberg, Squid Game, Rick Grimes, Thomas Shelby, John Wick, Kingsman, and similar.
 - **Song name explicitly in title** — especially if slowed/remixed.
 - **Description** — if it contains hashtag spam, "subscribe," "no copyright," or music credits it reinforces slop signals from the title.
