@@ -35,9 +35,11 @@ Use these as intuition guides, not a checklist. Weight them by how many stack to
 - **Description** — if it contains hashtag spam, "subscribe," "no copyright," or music credits it reinforces slop signals from the title.
 - **Tutorials and how-to videos** — score 0, always.
 - **Scenes or cut fragments from shows or movies** — only applies when the title explicitly states it is a scene or clip from a specific, named and widely-known show or movie. Score 4. Fan animations or original artwork inspired by a franchise do not trigger this.
+- **Clickbait** is its own category and does not affect the slop score.
 
 ### EXCEPTIONS
 - If the content is "lost" or an archived version, the score is always 0, regardless of other signals.
+- Slop only applies to video edits — fan edits, character edits, movie/show clips with trending audio, and similar derivative media. News, commentary, opinion, or political content is never slop regardless of how sensationalized the title is. Score these 0.
 
 ### OUTPUT
 Valid JSON only. No other text. Reasoning max one sentence, and brief.
