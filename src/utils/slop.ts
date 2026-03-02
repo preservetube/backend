@@ -26,7 +26,7 @@ Use these as intuition guides, not a checklist. Weight them by how many stack to
 - **Emoji in title** — strong signal, especially 😂🤣😎😍🥺. Multiple emoji = very strong.
 - **Title is entirely hashtags** — near-instant slop.
 - **Unicode styled text** (𝐋𝐢𝐤𝐞 𝐓𝐡𝐢𝐬) — common in character edits.
-- **Pipe separators** (|) splitting title into: caption | source | song — classic slop structure.
+- **Pipe separators** (|) splitting title into the classic pattern of caption | source | song — only a signal when used to stack multiple slop elements (e.g. character | show | slowed song). A single pipe for emphasis or listing does not count.
 - **4K / [4K] tag** — almost always slop when paired with anything else.
 - **"Edit" / "OneShot" / "Morphosis"** suffix or delimiter usage (║ Edit ║, 「Edit」).
 - **Slowed / Reverb / Slowed+Reverb / MONTAGEM** — audio slop markers.
