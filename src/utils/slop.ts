@@ -1,5 +1,22 @@
 import redis from '@/utils/redis';
 
+const channelBlacklist = [
+  'UCR7d_LMsADXorkUF5fkcEHQ',
+  'UCgcX8KN9tjesfSg1KYW8JMA',
+  'UCRbV62Z7jv5j9WHdjCQT4BQ',
+  'UCErCs-HgXDfj_79jbWO8SqA',
+  'UClt1wsBuiIJS8_RoAFlkSlQ',
+  'UCviJ2KzLw4W7zRNzPv6FLbA',
+  'UCUQmW2YLzhEmMTqO0RAPlOw',
+  'UCtmnjVU-u1B7vX-XDhuvExA',
+  'UCgcX8KN9tjesfSg1KYW8JMA',
+  'UCh8VpxMSRm-JoogNpCFHbMw',
+  'UCUQmW2YLzhEmMTqO0RAPlOw',
+  'UC4Anp9y2TU-d5blFUf7wCqw',
+  'UC-TaLb_bURExFdLFXkJ3Adg',
+  'UC1XgosSxwK9xtrMLsRzCbHw'
+]
+
 async function analyseSlop(id: string, title: string, description: string) {
   const llmResponse = await (await fetch('https://nano-gpt.com/api/v1/chat/completions', {
     method: 'POST',
@@ -29,20 +46,20 @@ Use these as intuition guides, not a checklist. Weight them by how many stack to
 - **Pipe separators** (|) splitting title into the classic pattern of caption | source | song — only a signal when used to stack multiple slop elements (e.g. character | show | slowed song). A single pipe for emphasis or listing does not count.
 - **4K / [4K] tag** — almost always slop when paired with anything else.
 - **"Edit" / "OneShot" / "Morphosis"** suffix or delimiter usage (║ Edit ║, 「Edit」).
-- **Slowed / Reverb / Slowed+Reverb / MONTAGEM** — not a signal on its own. Only counts when stacked with other slop signals.
-- **Known slop franchises:** Johnny English, Mr. Bean, Breaking Bad, Peaky Blinders, American Psycho, Patrick Bateman, The Boys, Homelander, Dexter, Joe Goldberg, Squid Game, Rick Grimes, Thomas Shelby, John Wick, Kingsman, and similar.
+- **Slowed / Reverb / Slowed+Reverb / MONTAGEM** — only counts when stacked with others
+- **Known slop franchises:** This list is definitive, not illustrative. Only the following qualify: Johnny English, Mr. Bean, Breaking Bad, Peaky Blinders, American Psycho, Patrick Bateman, The Boys, Homelander, Dexter, Joe Goldberg, Squid Game, Rick Grimes, Thomas Shelby, John Wick, Kingsman.
 - **Song name explicitly in title** — especially if slowed/remixed.
-- **Description** — if it contains hashtag spam, "subscribe," "no copyright," or music credits it reinforces slop signals from the title.
-- **Tutorials and how-to videos** — score 0, always.
-- **Scenes or cut fragments from shows or movies** — only applies when the title explicitly states it is a scene or clip from a specific, named and widely-known show or movie. Score 4. Fan animations or original artwork inspired by a franchise do not trigger this.
+- **Description** — if it contains hashtag spam, or music credits it reinforces slop signals from the title.
 - **Clickbait** is its own category and does not affect the slop score.
 
 ### EXCEPTIONS
-- If the content is "lost" or an archived version, the score is always 0, regardless of other signals.
-- Slop only applies to video edits — fan edits, character edits, movie/show clips with trending audio, and similar derivative media. News, commentary, opinion, or political content is never slop regardless of how sensationalized the title is. Score these 0.
+- Tutorials, news, commentary, politics — score 0 automatically
+- Lost/archived content — score 0 automatically
+- Fan animations/original franchise-inspired art — do not trigger slop
+- Direct movie/TV clips or scenes uploaded without transformative editing — score 4 automatically
 
 ### OUTPUT
-Valid JSON only. No other text. Reasoning max one sentence, and brief.
+Valid JSON only. No other text. One sentence reasoning max, be brief. Use your judgment — if multiple signals stack logically toward slop, score accordingly. Do not assume content type beyond what title explicitly states.
 
 {"score": 0, "reasoning": "..."}
 
@@ -65,7 +82,9 @@ User Description: ${description.slice(0,100)}` }
   return parsedResponse
 }
 
-async function parseSlop(id: string, title: string, description: string): Promise<number> {
+async function parseSlop(id: string, title: string, description: string, channelId: string): Promise<number> {
+  if (channelBlacklist.includes(channelId)) return 5;
+
   const cachedSlop = await redis.get(`slop:${id}`)
   if (cachedSlop) return parseInt(cachedSlop)
 
