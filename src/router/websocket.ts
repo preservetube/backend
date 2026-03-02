@@ -215,7 +215,7 @@ app.ws('/savechannel', {
         break;
       }
 
-      const slopScore = await parseSlop(video.video_id, video.title.text, video.description_snippet.text)
+      const slopScore = await parseSlop(video.video_id, video.title.text, video.description_snippet?.text || '')
       
       if (slopScore >= 4) {
         sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com', false);
