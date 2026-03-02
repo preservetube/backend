@@ -134,7 +134,7 @@ app.ws('/save', {
         (data.microformat.playerMicroformatRenderer.description?.simpleText || '').replaceAll('\n', '<br>'))
       
       if (slopScore >= 4) {
-        sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com');
+        sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com', false);
         return sendError(ws, 'Your download has been rejected by our slop filter.');
       }
 
@@ -214,7 +214,7 @@ app.ws('/savechannel', {
       const slopScore = await parseSlop(video.video_id, video.title.text, video.description_snippet.text)
       
       if (slopScore >= 4) {
-        sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com');
+        sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com', false);
         sendError(ws, 'Your download has been rejected by our slop filter.');
         continue;
       }
