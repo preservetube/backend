@@ -7,9 +7,10 @@ import { validateVideo, validateChannel } from '@/utils/regex'
 import { checkCaptcha, createDatabaseVideo } from '@/utils/common';
 import { downloadVideo } from '@/utils/download';
 import { uploadVideo } from '@/utils/upload';
-import { getChannelVideos } from '@/utils/metadata';
+import { getChannelVideos, getVideo } from '@/utils/metadata';
 import { error } from '@/utils/html'
 import redis from '@/utils/redis';
+import { parseSlop } from '@/utils/slop';
 
 const app = new Elysia()
 const videoIds: Record<string, string> = {}
@@ -128,6 +129,15 @@ app.ws('/save', {
         ws.send('DATA - Captcha validated. Starting download...');
       }
 
+      const data = await getVideo(videoId)
+      const slopScore = await parseSlop(videoId, data.videoDetails.title, 
+        (data.microformat.playerMicroformatRenderer.description?.simpleText || '').replaceAll('\n', '<br>'))
+      
+      if (slopScore >= 4) {
+        sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com');
+        return sendError(ws, 'Your download has been rejected by our slop filter.');
+      }
+
       const downloadResult = await downloadVideo(ws, videoId);
       if (downloadResult.fail) {
         await cleanup(ws, videoId);
@@ -199,6 +209,14 @@ app.ws('/savechannel', {
       if (isLimited) {
         sendError(ws, 'You have been ratelimited. </br>Is this an urgent archive? Please email me: admin@preservetube.com', false);
         break;
+      }
+
+      const slopScore = await parseSlop(video.video_id, video.title.text, video.description_snippet.text)
+      
+      if (slopScore >= 4) {
+        sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com');
+        sendError(ws, 'Your download has been rejected by our slop filter.');
+        continue;
       }
 
       ws.send(`DATA - Processing video: ${video.title.text}`);
