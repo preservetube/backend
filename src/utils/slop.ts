@@ -47,7 +47,7 @@ Use these as intuition guides, not a checklist. Weight them by how many stack to
 - **4K / [4K] tag** — almost always slop when paired with anything else.
 - **"Edit" / "OneShot" / "Morphosis"** suffix or delimiter usage (║ Edit ║, 「Edit」).
 - **Slowed / Reverb / Slowed+Reverb / MONTAGEM** — only counts when stacked with others
-- **Known slop franchises:** This list is definitive, not illustrative. Only the following qualify: Johnny English, Mr. Bean, Breaking Bad, Peaky Blinders, American Psycho, Patrick Bateman, The Boys, Homelander, Dexter, Joe Goldberg, Squid Game, Rick Grimes, Thomas Shelby, John Wick, Kingsman.
+- **Known slop franchises:** This list is definitive, not illustrative. Only the following qualify: Johnny English, Mr. Bean, Breaking Bad, Peaky Blinders, American Psycho, Patrick Bateman, The Boys, Homelander, Dexter, Joe Goldberg, Squid Game, Rick Grimes, Thomas Shelby, John Wick, Kingsman. They must be explicitly named, no interpretation from your side.
 - **Song name explicitly in title** — especially if slowed/remixed.
 - **Description** — if it contains hashtag spam, or music credits it reinforces slop signals from the title.
 - **Clickbait** is its own category and does not affect the slop score.
