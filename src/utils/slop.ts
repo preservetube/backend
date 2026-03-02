@@ -34,6 +34,10 @@ Use these as intuition guides, not a checklist. Weight them by how many stack to
 - **Song name explicitly in title** — especially if slowed/remixed.
 - **Description** — if it contains hashtag spam, "subscribe," "no copyright," or music credits it reinforces slop signals from the title.
 - **Tutorials and how-to videos** — score 0, always.
+- **Scenes or cut fragments from shows or movies** — always score 4, unless other signals push it higher.
+
+### EXCEPTIONS
+- If the content is "lost" or an archived version, the score is always 0, regardless of other signals.
 
 ### OUTPUT
 Valid JSON only. No other text. Reasoning max one sentence, and brief.
@@ -65,7 +69,7 @@ async function parseSlop(id: string, title: string, description: string): Promis
 
   const { score, reasoning } = await analyseSlop(id , title, description)
   if (reasoning != 'failed to parse') await redis.set(`slop:${id}`, score, 'EX', 60 * 60 * 24 * 7)
-    
+
   return score
 }
 
