@@ -34,7 +34,7 @@ Use these as intuition guides, not a checklist. Weight them by how many stack to
 - **Song name explicitly in title** — especially if slowed/remixed.
 - **Description** — if it contains hashtag spam, "subscribe," "no copyright," or music credits it reinforces slop signals from the title.
 - **Tutorials and how-to videos** — score 0, always.
-- **Scenes or cut fragments from shows or movies** — always score 4, unless other signals push it higher.
+- **Scenes or cut fragments from shows or movies** — only applies when the title explicitly states it is a scene or clip from a specific, named and widely-known show or movie. Score 4. Fan animations or original artwork inspired by a franchise do not trigger this.
 
 ### EXCEPTIONS
 - If the content is "lost" or an archived version, the score is always 0, regardless of other signals.
