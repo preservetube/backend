@@ -46,8 +46,15 @@ User Description: ${description.slice(0,100)}` }
     })
   })).json() 
 
-  const parsedResponse: {score: number, reasoning: string} = JSON.parse(llmResponse.choices[0].message.content.replace(/```json|```/g, '').trim())
-  console.log(`parsed ${id} - ${JSON.stringify(parsedResponse)}`)
+  let parsedResponse: {score: number, reasoning: string} 
+    = { score: 0, reasoning: 'failed to parse' }
+  
+  try {
+    parsedResponse = JSON.parse(llmResponse.choices[0].message.content.replace(/```json|```/g, '').trim())
+    console.log(`parsed ${id} - ${JSON.stringify(parsedResponse)}`)
+  } catch (e) {
+    console.log(`failed to parse ${id} - ${llmResponse.choices[0].message.content}`)
+  }
 
   return parsedResponse
 }
@@ -56,8 +63,9 @@ async function parseSlop(id: string, title: string, description: string): Promis
   const cachedSlop = await redis.get(`slop:${id}`)
   if (cachedSlop) return parseInt(cachedSlop)
 
-  const { score } = await analyseSlop(id , title, description)
-  await redis.set(`slop:${id}`, score, 'EX', 60 * 60 * 24 * 7)
+  const { score, reasoning } = await analyseSlop(id , title, description)
+  if (reasoning != 'failed to parse') await redis.set(`slop:${id}`, score, 'EX', 60 * 60 * 24 * 7)
+    
   return score
 }
 
