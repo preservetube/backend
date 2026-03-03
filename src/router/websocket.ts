@@ -134,11 +134,11 @@ app.ws('/save', {
         return sendError(ws, 'Unable to retrieve video info from YouTube. Please try again later.')
       }
 
-      const slopScore = await parseSlop(videoId, data.videoDetails.title, 
+      const isSlop = await parseSlop(videoId, data.videoDetails.title, 
         (data.microformat.playerMicroformatRenderer.description?.simpleText || '').replaceAll('\n', '<br>'), 
         data.videoDetails.channelId)
       
-      if (slopScore >= 4) {
+      if (isSlop) {
         sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com', false);
         return sendError(ws, 'Your download has been rejected by our slop filter.');
       }
@@ -216,10 +216,10 @@ app.ws('/savechannel', {
         break;
       }
 
-      const slopScore = await parseSlop(video.video_id, video.title.text, 
+      const isSlop = await parseSlop(video.video_id, video.title.text, 
         video.description_snippet?.text || '', channelId)
       
-      if (slopScore >= 4) {
+      if (isSlop) {
         sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com', false);
         sendError(ws, 'Your download has been rejected by our slop filter.');
         continue;
