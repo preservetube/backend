@@ -139,8 +139,9 @@ app.ws('/save', {
         data.videoDetails.channelId)
       
       if (isSlop) {
-        sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com', false);
-        return sendError(ws, 'Your download has been rejected by our slop filter.');
+        sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com<br>', false);
+        sendError(ws, '<br>Read more about which videos aren\'t suitable on our <a href="/about">FAQ</a> page.', false)
+        return sendError(ws, 'This video was identified as not suitable for our platform.');
       }
 
       const downloadResult = await downloadVideo(ws, videoId);
@@ -220,8 +221,9 @@ app.ws('/savechannel', {
         video.description_snippet?.text || '', channelId)
       
       if (isSlop) {
-        sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com', false);
-        sendError(ws, 'Your download has been rejected by our slop filter.');
+        sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com<br>', false);
+        sendError(ws, '<br>Read more about which videos aren\'t suitable on our <a href="/about">FAQ</a> page.', false)
+        sendError(ws, 'This video was identified as not suitable for our platform.', false);
         continue;
       }
 

@@ -21,6 +21,14 @@
   Older videos (ones before Sept 19th 2025) were sadly encoded in a way that requires the browser to load the whole video before being able to play it. Newer videos no longer require this.<br><br>
   Other reasons for videos loading slowly include your location in comparison to the nearest caching server, and that servers location in comparison to the storage server. The video might be traveling a lot of kilometers before reaching you.
 
+  <h3>What can't be archived?</h3>
+  To stay true to Preservetube's mission, we automatically screen submissions through an AI model. The following types of videos are not eligible for archiving:
+  <ul>
+    <li>Raw unedited clips from movies or TV series;</li>
+    <li>AI-generated content or compilations made with tools like Sora;</li>
+    <li>Short-form edits of TV show characters (e.g. "sigma edits").</li>
+  </ul>
+
   <h3>How do I get in touch with you?</h3>
   I'm reachable via admin@preservetube.com (<a class="a" href="/pgp.txt">pgp</a>).
 </div>
