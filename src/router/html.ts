@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia';
 import { m, eta, error } from '@/utils/html'
 import healthStatus from '@/utils/health';
+import { checkIpRanges } from '@/utils/ranges';
 const app = new Elysia()
 
 app.get('/', async ({ set }) => {
@@ -12,8 +13,16 @@ app.get('/', async ({ set }) => {
   }))
 })
 
-app.get('/save', async ({ query: { url }, set, error }) => {
+app.get('/save', async ({ query: { url }, set, headers, error }) => {
   if (!url) return error(400, 'No url provided.')
+
+  const ranges = await checkIpRanges(headers['cf-connecting-ip'] || headers['x-forwarded-for'] || '')
+  if (ranges.blocked) {
+    set.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return await m(eta.render('./blocked', { 
+      title: 'Blocked | PreserveTube'
+    }))
+  }
 
   let websocket = process.env.WEBSOCKET
   if (healthStatus[process.env.METADATA!] != 'healthy') {
@@ -29,8 +38,16 @@ app.get('/save', async ({ query: { url }, set, error }) => {
   }))
 })
 
-app.get('/savechannel', async ({ query: { url }, set, error }) => {
+app.get('/savechannel', async ({ query: { url }, set, headers, error }) => {
   if (!url) return error(400, 'No url provided.')
+
+  const ranges = await checkIpRanges(headers['cf-connecting-ip'] || headers['x-forwarded-for'] || '')
+  if (ranges.blocked) {
+    set.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return await m(eta.render('./blocked', { 
+      title: 'Blocked | PreserveTube'
+    }))
+  }
 
   let websocket = process.env.WEBSOCKET
   if (healthStatus[process.env.METADATA!] != 'healthy') {

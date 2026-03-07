@@ -10,6 +10,7 @@ import { getChannelVideos, getVideo } from '@/utils/metadata';
 import { error } from '@/utils/html'
 import redis from '@/utils/redis';
 import { parseSlop } from '@/utils/slop';
+import { checkIpRanges } from '@/utils/ranges';
 
 const app = new Elysia()
 const videoIds: Record<string, string> = {}
@@ -92,6 +93,12 @@ app.ws('/save', {
   }),
   body: t.String(),
   open: async (ws) => {
+    const range = await checkIpRanges(ws.data.headers['x-forwarded-for'] || '')
+    if (range.list != 'cloudflare') return sendError(ws, 'There\'s something wrong with your connection.')
+    
+    const blacklistCheck = await checkIpRanges(ws.data.headers['cf-connecting-ip']!)
+    if (blacklistCheck.blocked) return sendError(ws, `Your network is flagged as malicious.`)
+
     console.log(`${ws.id} - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
 
     const videoId = validateVideo(ws.data.query.url)
@@ -190,6 +197,12 @@ app.ws('/savechannel', {
   }),
   body: t.String(),
   open: async (ws) => {
+    const range = await checkIpRanges(ws.data.headers['x-forwarded-for'] || '')
+    if (range.list != 'cloudflare') return sendError(ws, 'There\'s something wrong with your connection.')
+
+    const blacklistCheck = await checkIpRanges(ws.data.headers['cf-connecting-ip']!)
+    if (blacklistCheck.blocked) return sendError(ws, `Your network is flagged as malicious.`)
+
     console.log(`${ws.id} - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
 
     const channelId = await validateChannel(ws.data.query.url);

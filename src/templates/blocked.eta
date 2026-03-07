@@ -1,0 +1,37 @@
+<% layout('./layout') %>
+
+<div class="text">
+  <p>
+    We detected malicious activity from the network you are currently visiting from, so we have
+    blocked certain functionality for this connection.
+  </p>
+  <p>
+    This is most commonly caused by free VPNs, shared VPN exit nodes, or other heavily abused
+    proxy networks.
+  </p>
+  <p>
+    If you believe this is a mistake, please contact
+    <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.
+  </p>
+</div>
+
+<style> 
+  .a {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+  }
+    
+	.text {
+    margin-top: 2.5%;
+    margin-bottom: 5%;
+    margin-left: auto;
+    margin-right: auto;
+    width: 75%;
+    text-align: center;
+  }
+
+  h3 {
+    margin-top: 20px;
+    margin-bottom: 2px;
+  }
+</style>
