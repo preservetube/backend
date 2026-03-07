@@ -114,6 +114,7 @@ app.ws('/save', {
         return sendError(ws, 'You have been ratelimited. </br>Is this an urgent archive? Please email me: admin@preservetube.com');
       }
 
+      console.log(`saving (${hash}) - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
       ws.send('DATA - This process is automatic. Your video will start archiving shortly.')
       ws.send('CAPTCHA - Solving a cryptographic challenge before downloading.')
       videoIds[ws.id] = videoId
@@ -238,6 +239,8 @@ app.ws('/savechannel', {
         sendError(ws, 'You have been ratelimited. </br>Is this an urgent archive? Please email me: admin@preservetube.com', false);
         break;
       }
+
+      console.log(`saving (${hash}) - ${ws.data.path} - ${video.video_id}`)
 
       const isSlop = await parseSlop(video.video_id, video.title.text, 
         video.description_snippet?.text || '', channelId)
