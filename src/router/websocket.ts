@@ -15,6 +15,7 @@ const app = new Elysia()
 const videoIds: Record<string, string> = {}
 
 const MB_LIMIT = 500
+const saveKey = (videoId: string) => `save:${videoId}`
 
 const checkMbLimit = async (hash: string, mb?: number): Promise<boolean> => {
   const key = `save-mb:${hash}`
@@ -36,7 +37,7 @@ const sendError = (ws: any, message: string, close: boolean = true) => {
 
 const cleanup = async (ws: any, videoId: string) => {
   delete videoIds[ws.id];
-  if (videoId) await redis.del(videoId);
+  if (videoId) await redis.del(saveKey(videoId));
   await redis.del(ws.id);
 };
 
@@ -95,7 +96,7 @@ app.ws('/save', {
 
     const videoId = validateVideo(ws.data.query.url)
     if (!videoId) return sendError(ws, 'Invalid video URL.');
-    if (await redis.get(videoId)) return sendError(ws, 'Someone is already downloading this video...');
+    if (await redis.get(saveKey(videoId))) return sendError(ws, 'Someone is already downloading this video...');
     if (await redis.get(`blacklist:${videoId}`)) return sendError(ws, 'This video is blacklisted.');
 
     const already = await db.selectFrom('videos')
@@ -124,8 +125,8 @@ app.ws('/save', {
     const videoId = videoIds[ws.id];
     if (!videoId) return sendError(ws, 'No video ID associated with this session.');
 
-    if (await redis.get(videoId) !== 'downloading') {
-      await redis.set(videoId, 'downloading', 'EX', 300)
+    if (await redis.get(saveKey(videoId)) !== 'downloading') {
+      await redis.set(saveKey(videoId), 'downloading', 'EX', 300)
 
       const captchaCheck = await checkCaptcha(message, ws.data.headers['cf-connecting-ip'] || '0.0.0.0')
       if (!captchaCheck.success) {
@@ -168,7 +169,7 @@ app.ws('/save', {
       }
 
       const uploadSuccess = await handleUpload(ws, videoId);
-      if (!uploadSuccess) await redis.del(videoId);
+      if (!uploadSuccess) await redis.del(saveKey(videoId));
 
       await cleanup(ws, videoId);
       ws.close();
@@ -220,7 +221,7 @@ app.ws('/savechannel', {
     const hash = Bun.hash(getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'))
 
     for (const video of videos.slice(0, 5)) {
-      if (!video || (await redis.get(video.video_id)) || (await redis.get(`blacklist:${video.video_id}`))) continue;
+      if (!video || (await redis.get(saveKey(video.video_id))) || (await redis.get(`blacklist:${video.video_id}`))) continue;
      
       const already = await db.selectFrom('videos')
         .select('id')
@@ -246,7 +247,7 @@ app.ws('/savechannel', {
       }
 
       ws.send(`DATA - Processing video: ${video.title.text}`);
-      await redis.set(video.video_id, 'downloading', 'EX', 300);
+      await redis.set(saveKey(video.video_id), 'downloading', 'EX', 300);
 
       const downloadResult = await downloadVideo(ws, video.video_id);
       if (!downloadResult.fail) {
@@ -261,7 +262,7 @@ app.ws('/savechannel', {
         await handleUpload(ws, video.video_id, true);
       }
 
-      await redis.del(video.video_id);
+      await redis.del(saveKey(video.video_id));
       ws.send(`DATA - Created video page for ${video.title.text}`)
     }
 

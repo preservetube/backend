@@ -9,10 +9,6 @@ const redis = new Redis({
 redis.on('ready', async function () {
   console.log('connected to redis')
 
-  const keys = await redis.keys('*')
-  const filteredKeys = keys.filter(key => !key.startsWith('blacklist:'))
-  if (filteredKeys.length) await redis.del(filteredKeys)
-
   setInterval(async () => {
     const files = fs.readdirSync('videos')
     const targetFiles = files.filter((file) => file.endsWith('.webm') || file.endsWith('.m4a'))
