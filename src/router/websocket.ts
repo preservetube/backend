@@ -14,7 +14,7 @@ import { parseSlop } from '@/utils/slop';
 const app = new Elysia()
 const videoIds: Record<string, string> = {}
 
-const MB_LIMIT = 500
+const MB_LIMIT = 350
 const saveKey = (videoId: string) => `save:${videoId}`
 
 const checkMbLimit = async (hash: string, mb?: number): Promise<boolean> => {
@@ -218,7 +218,10 @@ app.ws('/savechannel', {
 
     videoIds[ws.id] = `downloading-${channelId}`;
     const videos = await getChannelVideos(channelId);
-    const hash = Bun.hash(getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'))
+    if (!Array.isArray(videos)) {
+      await cleanup(ws, channelId);
+      return sendError(ws, 'Unable to retrieve channel videos from YouTube. Please try again later.');
+    }
 
     for (const video of videos.slice(0, 5)) {
       if (!video || (await redis.get(saveKey(video.video_id))) || (await redis.get(`blacklist:${video.video_id}`))) continue;
