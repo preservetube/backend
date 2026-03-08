@@ -15,7 +15,7 @@ import { checkIpRanges } from '@/utils/ranges';
 const app = new Elysia()
 const videoIds: Record<string, string> = {}
 
-const MB_LIMIT = 350
+const MB_LIMIT = 250
 const saveKey = (videoId: string) => `save:${videoId}`
 
 const checkMbLimit = async (hash: string, mb?: number): Promise<boolean> => {
