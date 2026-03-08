@@ -41,7 +41,7 @@ async function analyseSlop(id: string, title: string, description: string) {
 - **4K / [4K] tag** — strong signal when paired with anything else (optional)
 - **"Edit" / "OneShot" / "Morphosis"** as suffix or with delimiters (║ Edit ║, 「Edit」)
 - **Slowed / Reverb / Slowed+Reverb / MONTAGEM** — only counts when stacked with other signals
-- **Known slop franchises** — this list is exhaustive, not illustrative. Only these qualify: Johnny English, Mr. Bean, Breaking Bad, Peaky Blinders, American Psycho, Patrick Bateman, The Boys, Homelander, Dexter, Joe Goldberg, Squid Game, Rick Grimes, Thomas Shelby, John Wick, Kingsman. Must be explicitly named.
+- **Known slop franchises** — this list is exhaustive, not illustrative. Only these qualify: Johnny English, Mr. Bean, Breaking Bad, Peaky Blinders, American Psycho, Patrick Bateman, The Boys, Homelander, Dexter, Joe Goldberg, Squid Game, Rick Grimes, Thomas Shelby, John Wick, Kingsman, Mr. Incredible. Must be explicitly named.
 - **Song name explicitly in title** — especially if slowed or remixed
 - **Description** — hashtag spam or music credits reinforce title signals
 - **Title mirrors description exactly** — reinforces slop when combined with other signals (optional)
