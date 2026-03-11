@@ -28,13 +28,15 @@ app.get('/save', async ({ query: { url }, set, headers, error }) => {
   if (healthStatus[process.env.METADATA!] != 'healthy') {
     websocket = process.env.ALTERNATIVE_WEBSOCKET!
   }
+  const ytPatched = (process.env.YT_PATCHED || '').toLowerCase() === 'true' || process.env.YT_PATCHED === '1'
 
   set.headers['Content-Type'] = 'text/html; charset=utf-8'
   return await m(eta.render('./save', { 
     title: 'Save Video | PreserveTube',
     websocket,
     sitekey: process.env.SITEKEY,
-    url
+    url,
+    ytPatched
   }))
 })
 

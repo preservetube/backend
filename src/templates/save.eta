@@ -1,7 +1,9 @@
 <% layout('./layout') %>
-<% /* <div class="sorry">
-	Saving videos should be stable again. Will try some more experiments in the coming days.
-</div> */ %>
+<% if (it.ytPatched) { %>
+<div class="sorry">
+  YouTube changed something, which caused saving to stop working. Will fix it ASAP.
+</div>
+<% } %>
 
 <div id="backdrop" style="display: none;">
   <div id="save-intro-dialog">
@@ -27,6 +29,7 @@
   </div>
 </div>
 
+<% if (!it.ytPatched) { %>
 <div id="logs" class="logs">
   <h1 id="title"></h1>
   <div class="captcha" id="captcha"></div>
@@ -34,7 +37,9 @@
     <noscript>This feature doesen't function properly unless JavaScript is enabled.</noscript>
   </h3>
 </div>
+<% } %>
 
+<% if (!it.ytPatched) { %>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>
   const url = "<%= it.url %>"
@@ -141,18 +146,18 @@
 
   runFirstSaveGate()
 </script>
+<% } %>
 
 <style>
-	.sorry {
-    margin-top: 10px;
-		position: relative;
-		background-color: #cfeeffff;
-    border-top: 2px dashed #5ebbdaff;
-		border-bottom: 2px dashed #5ebbdaff;
-		padding-top: 5px;
-		padding-bottom: 5px;
-		text-align: center;
-	}
+  .sorry {
+    margin: 24px auto 80px auto;
+    width: min(760px, calc(100vw - 28px));
+    text-align: center;
+    padding: 8px 0;
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: #000;
+  }
 
   #backdrop {
     display: block;
