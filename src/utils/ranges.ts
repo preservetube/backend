@@ -9,7 +9,6 @@ export interface BlockedIpResult {
 
 const IPV6_BITS = 128n
 const IPV6_FULL_MASK = (1n << IPV6_BITS) - 1n
-const toBlockLists = ['expressvpn', '1clickvpn']
 
 type ParsedIp =
   | { version: 4; value: number }
@@ -173,7 +172,7 @@ export async function checkIpRanges(ip: string): Promise<BlockedIpResult> {
     for (const cidr of cidrs) {
       if (isIpInCidr(parsedIp, cidr)) {
         return {
-          blocked: toBlockLists.includes(path.basename(fileName, '.txt')),
+          blocked: path.basename(fileName, '.txt') != 'cloudflare',
           list: path.basename(fileName, '.txt'),
           range: cidr
         }

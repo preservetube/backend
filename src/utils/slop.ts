@@ -93,6 +93,7 @@ async function parseSlop(id: string, title: string, description: string, channel
   const cachedSlop = await redis.get(`slop:${id}`)
   if (cachedSlop) return cachedSlop == 'true' ? true : false
 
+  return false
   const { is_slop, reasoning } = await analyseSlop(id , title, description)
   if (reasoning != 'failed to parse') await redis.set(`slop:${id}`, is_slop.toString(), 'EX', 60 * 60 * 24 * 7)
 
