@@ -1,23 +1,5 @@
 import redis from '@/utils/redis';
 
-const channelBlacklist = [
-  'UCR7d_LMsADXorkUF5fkcEHQ',
-  'UCgcX8KN9tjesfSg1KYW8JMA',
-  'UCRbV62Z7jv5j9WHdjCQT4BQ',
-  'UCErCs-HgXDfj_79jbWO8SqA',
-  'UClt1wsBuiIJS8_RoAFlkSlQ',
-  'UCviJ2KzLw4W7zRNzPv6FLbA',
-  'UCUQmW2YLzhEmMTqO0RAPlOw',
-  'UCtmnjVU-u1B7vX-XDhuvExA',
-  'UCgcX8KN9tjesfSg1KYW8JMA',
-  'UCh8VpxMSRm-JoogNpCFHbMw',
-  'UCUQmW2YLzhEmMTqO0RAPlOw',
-  'UC4Anp9y2TU-d5blFUf7wCqw',
-  'UC-TaLb_bURExFdLFXkJ3Adg',
-  'UC1XgosSxwK9xtrMLsRzCbHw',
-  'UCInXezQxpWgrd7uPKeA6gPQ',
-]
-
 async function analyseSlop(id: string, title: string, description: string) {
   const llmResponse = await (await fetch('https://nano-gpt.com/api/v1/chat/completions', {
     method: 'POST',
@@ -88,7 +70,8 @@ User Description: ${description.slice(0,500)}` }
 }
 
 async function parseSlop(id: string, title: string, description: string, channelId: string): Promise<boolean> {
-  if (channelBlacklist.includes(channelId)) return true;
+  const isBanned = await redis.sismember('slop:banned_channels', channelId)
+  if (isBanned) return true;
 
   const cachedSlop = await redis.get(`slop:${id}`)
   if (cachedSlop) return cachedSlop == 'true' ? true : false
