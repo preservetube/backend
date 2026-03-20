@@ -1,3 +1,5 @@
+import { getMetadataBackend } from '@/utils/health';
+
 function validateVideo(input: string): string | false {
   try {
     const url = new URL(input);
@@ -87,7 +89,7 @@ async function validateChannel(input: string): Promise<string | { error: string;
         whatIsIt = 'handle'
       } else return false 
 
-      const channelReq = await fetch(`${process.env.METADATA}/getWebpageJson?url=${url}`)
+      const channelReq = await fetch(`${getMetadataBackend()}/getWebpageJson?url=${url}`)
       if (!channelReq.ok) return {
         error: `Failed to fetch Youtube with status ${channelReq.status}. Please retry.`
       }

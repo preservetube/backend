@@ -1,5 +1,13 @@
 const healthStatus: Record<string, string> = {}
 
+function getMetadataBackend() {
+  const primary = process.env.METADATA!
+  const alternative = process.env.ALTERNATIVE_METADATA!
+
+  if (healthStatus[primary] === 'healthy' || !alternative) return primary
+  return alternative
+}
+
 async function checkHealth() {
   const metadataServers: string[] = [process.env.METADATA!, process.env.ALTERNATIVE_METADATA!]
   await Promise.all(metadataServers.map(async (m) => {
@@ -18,3 +26,4 @@ checkHealth()
 setInterval(checkHealth, 5 * 60000)
 
 export default healthStatus
+export { getMetadataBackend }
