@@ -68,9 +68,27 @@ Disallow: /
 
 # the crawling rate is simply insane
 User-agent: Bingbot
+Disallow: /playlist
+Disallow: /hashtag/*
+Disallow: /live/*
+Disallow: /user/*
+Disallow: /shorts/*
+Disallow: /c/*
+Disallow: /@*
+Disallow: /search
+Disallow: /search?search=*
 Crawl-delay: 2
 
 User-agent: GPTBot
+Disallow: /playlist
+Disallow: /hashtag/*
+Disallow: /live/*
+Disallow: /user/*
+Disallow: /shorts/*
+Disallow: /c/*
+Disallow: /@*
+Disallow: /search
+Disallow: /search?search=*
 Crawl-delay: 2
 
 
