@@ -9,7 +9,7 @@ async function uploadVideo(video: string) {
     },
     body: await Bun.file(video).arrayBuffer()
   })
-  if (!uploaded.ok) throw new Error(`failed to upload video - ${uploaded.status} (${uploaded.statusText})`)
+  if (!uploaded.ok) throw new Error(`failed to upload video - ${uploaded.status} (${uploaded.statusText}) ${await uploaded.text()}`)
   return uploaded.url.replace(keys.endpoint, 'https://s5.archive.party')
 }
 
@@ -33,6 +33,7 @@ async function uploadImage(id: string, url: string) {
     },
     body: arrayBuffer
   })
+  if (!uploaded.ok) throw new Error(`failed to upload video - ${uploaded.status} (${uploaded.statusText}) ${await uploaded.text()}`)
   return uploaded.url.replace(keys.endpoint, 'https://s5.archive.party')
 }
 
