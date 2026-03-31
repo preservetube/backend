@@ -26,7 +26,7 @@
 			<meta name="twitter:description" content="PreserveTube is a time capsule for YouTube videos! It allows you to preserve any YouTube video, creating a snapshot that will always be available even if the original video disappears or is taken down.">
 		<% } %>
 	  
-		<link href="https://cdn.jsdelivr.net/gh/preservetube/fonts@main/fonts.css" rel="stylesheet" type="text/css">
+		<link href="https://static.blob.im/fonts.css" rel="stylesheet" type="text/css">
 		
 		<% if (it.manualAnalytics) { %>
 			<script defer data-domain="preservetube.com" src="https://a.gloe.net/js/script.manual.js"></script>
@@ -81,7 +81,7 @@
 		margin: 0;
 		padding: 0;
 		background-color: #fffeff;
-		font-family: "Proxima Nova", sans-serif;
+		font-family: "Noxima Prova", sans-serif;
 	}
 
 	a {
