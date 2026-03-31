@@ -175,3 +175,5 @@ dist
 .DS_Store
 
 s3.json
+# avoid "copyright" issues
+public/fonts/*
