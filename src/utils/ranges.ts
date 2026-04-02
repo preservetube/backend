@@ -1,4 +1,4 @@
-import { readdir, readFile } from 'node:fs/promises'
+import { readdir } from 'node:fs/promises'
 import * as path from 'node:path'
 
 export interface BlockedIpResult {
@@ -9,14 +9,39 @@ export interface BlockedIpResult {
 
 const IPV6_BITS = 128n
 const IPV6_FULL_MASK = (1n << IPV6_BITS) - 1n
+const NETWORKS_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000 // 6h
+const BLOCKED_DIR = path.resolve(process.cwd(), 'ranges')
+const asnBanList: number[] = [
+  206092, // expressvpn
+  63023, // free vpn servers
+  14618, // useless scrapers with chromium runing
+  137409, // gsl
+]
+
 
 type ParsedIp =
   | { version: 4; value: number }
   | { version: 6; value: bigint }
 
 type ParsedCidr =
-  | { version: 4; network: number; mask: number }
-  | { version: 6; network: bigint; mask: bigint }
+  | { version: 4; network: number; mask: number; prefix: number }
+  | { version: 6; network: bigint; mask: bigint; prefix: number }
+
+interface AsnMatch {
+  asn: number | null
+  range: string | null
+}
+
+interface NetworkAsnRecord {
+  asn: number
+  cidr: string
+  parsed: ParsedCidr
+}
+
+let networksCache: NetworkAsnRecord[] | null = null
+let networkRefreshPromise: Promise<void> | null = null
+let networksCheckedAt = 0
+let networksEtag: string | null = null
 
 function ipv4ToInt(ip: string): number | null {
   const parts = ip.trim().split('.')
@@ -105,7 +130,7 @@ function parseCidr(cidr: string): ParsedCidr | null {
   if (ip.version === 4) {
     if (prefix < 0 || prefix > 32) return null
     const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0
-    return { version: 4, network: ip.value & mask, mask }
+    return { version: 4, network: ip.value & mask, mask, prefix }
   }
 
   if (prefix < 0 || prefix > 128) return null
@@ -114,7 +139,7 @@ function parseCidr(cidr: string): ParsedCidr | null {
       ? 0n
       : (IPV6_FULL_MASK ^ ((1n << (IPV6_BITS - BigInt(prefix))) - 1n)) & IPV6_FULL_MASK
 
-  return { version: 6, network: ip.value & mask, mask }
+  return { version: 6, network: ip.value & mask, mask, prefix }
 }
 
 function isIpInCidr(ip: ParsedIp, cidr: string): boolean {
@@ -150,14 +175,130 @@ function extractCidrs(text: string): string[] {
   return cidrs
 }
 
+function parseCsvNetworks(text: string): NetworkAsnRecord[] {
+  const records: NetworkAsnRecord[] = []
+  const lines = text.split(/\r?\n/)
+
+  for (const line of lines) {
+    if (!line || line === 'network,asn,organization,country') continue
+
+    const firstComma = line.indexOf(',')
+    const secondComma = line.indexOf(',', firstComma + 1)
+    if (firstComma === -1 || secondComma === -1) continue
+
+    const cidr = line.slice(0, firstComma).trim()
+    const asnText = line.slice(firstComma + 1, secondComma).trim()
+    if (!cidr || !/^\d+$/.test(asnText)) continue
+
+    const parsed = parseCidr(cidr)
+    if (!parsed) continue
+
+    records.push({
+      asn: Number(asnText),
+      cidr,
+      parsed
+    })
+  }
+
+  return records
+}
+
+async function refreshNetworksCache(force: boolean = false): Promise<void> {
+  if (networkRefreshPromise) return networkRefreshPromise
+
+  networkRefreshPromise = (async () => {
+    const isFresh =
+      networksCache !== null &&
+      networksCheckedAt > 0 &&
+      Date.now() - networksCheckedAt < NETWORKS_REFRESH_INTERVAL_MS
+
+    if (!force && isFresh) {
+      return
+    }
+
+    try {
+      const headResponse = await fetch('https://ip.guide/bulk/networks.csv', {
+        method: 'HEAD',
+        redirect: 'follow'
+      })
+      if (!headResponse.ok) {
+        throw new Error(`failed to fetch ip.guide head with ${headResponse.status}`)
+      }
+
+      const remoteEtag = headResponse.headers.get('etag')
+      const shouldDownload =
+        networksCache === null || !remoteEtag || !networksEtag || remoteEtag !== networksEtag
+
+      if (shouldDownload) {
+        const downloadResponse = await fetch('https://ip.guide/bulk/networks.csv', {
+          redirect: 'follow'
+        })
+        if (!downloadResponse.ok) {
+          throw new Error(`failed to fetch ip.guide with ${downloadResponse.status}`)
+        }
+
+        const content = await downloadResponse.text()
+        networksCache = parseCsvNetworks(content)
+      }
+
+      networksCheckedAt = Date.now()
+      networksEtag = remoteEtag ?? networksEtag
+    } catch (error) {
+      if (networksCache === null) networksCache = []
+
+      console.error('Failed to refresh ASN network ranges', error)
+    }
+  })().finally(() => {
+    networkRefreshPromise = null
+  })
+
+  return networkRefreshPromise
+}
+
+async function resolveIpAsn(parsedIp: ParsedIp): Promise<AsnMatch> {
+  await refreshNetworksCache()
+  const records = networksCache ?? []
+  let bestMatch: NetworkAsnRecord | null = null
+
+  for (const record of records) {
+    if (parsedIp.version === 4 && record.parsed.version === 4) {
+      if ((parsedIp.value & record.parsed.mask) === record.parsed.network) {
+        if (bestMatch == null || record.parsed.prefix > bestMatch.parsed.prefix) {
+          bestMatch = record
+        }
+      }
+    }
+
+    if (parsedIp.version === 6 && record.parsed.version === 6) {
+      if ((parsedIp.value & record.parsed.mask) === record.parsed.network) {
+        if (bestMatch == null || record.parsed.prefix > bestMatch.parsed.prefix) {
+          bestMatch = record
+        }
+      }
+    }
+  }
+
+  if (bestMatch) {
+    return {
+      asn: bestMatch.asn,
+      range: bestMatch.cidr
+    }
+  }
+
+  return {
+    asn: null,
+    range: null
+  }
+}
+
 export async function checkIpRanges(ip: string): Promise<BlockedIpResult> {
   const parsedIp = parseIp(ip)
   if (parsedIp == null) {
     return { blocked: false, list: null, range: null }
   }
 
-  const blockedDir = path.resolve(process.cwd(), 'ranges')
-  const entries = await readdir(blockedDir, { withFileTypes: true })
+  const asnMatch = await resolveIpAsn(parsedIp)
+  const entries = await readdir(BLOCKED_DIR, { withFileTypes: true })
 
   const files = entries
     .filter(entry => entry.isFile() && entry.name.endsWith('.txt'))
@@ -165,8 +306,8 @@ export async function checkIpRanges(ip: string): Promise<BlockedIpResult> {
     .sort((a, b) => a.localeCompare(b))
 
   for (const fileName of files) {
-    const filePath = path.join(blockedDir, fileName)
-    const content = await readFile(filePath, 'utf8')
+    const filePath = path.join(BLOCKED_DIR, fileName)
+    const content = await Bun.file(filePath).text()
     const cidrs = extractCidrs(content)
 
     for (const cidr of cidrs) {
@@ -180,5 +321,24 @@ export async function checkIpRanges(ip: string): Promise<BlockedIpResult> {
     }
   }
 
-  return { blocked: false, list: null, range: null }
+  if (asnMatch.asn !== null && asnBanList.includes(asnMatch.asn)) {
+    return {
+      blocked: true,
+      list: `asn:${asnMatch.asn}`,
+      range: asnMatch.range
+    }
+  }
+
+  return {
+    blocked: false,
+    list: null,
+    range: null
+  }
 }
+
+const networkRefreshTimer = setInterval(() => {
+  void refreshNetworksCache(true)
+}, NETWORKS_REFRESH_INTERVAL_MS)
+
+networkRefreshTimer.unref?.()
+void refreshNetworksCache()
