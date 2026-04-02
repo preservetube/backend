@@ -26,7 +26,7 @@ export interface VideosTable {
   playlist?: string | null
   disabled: boolean
   hasBeenReported: boolean,
-  deletion_stage: 'pending_delete' | 'soft_delete' | 'deleted' | null
+  deletion_stage: 'pending_delete' | 'soft_delete' | 'cold_storage' | 'deleted' | null
 }
 
 export type Video = Selectable<VideosTable>

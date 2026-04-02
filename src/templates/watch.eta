@@ -33,7 +33,7 @@
           <a href="about">[faq]</a>
         </div>
       </div>
-      
+
       <% if (it.transparency.length != 0) { %>
         <div class="reports">
           <span class="reports-title">Somebody has complained about this video...</span> <br/>
@@ -42,14 +42,14 @@
           <% }) %>
         </div>
       <% } %>
-      
+
       <% if (it.deletion_stage === 'pending_delete') { %>
         <div class="deletion-banner pending">
           <span class="deletion-title">Heads up — this video is scheduled for deletion.</span>
           <p>Got questions or think this is a mistake? Drop me an email at <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.</p>
         </div>
       <% } %>
-    
+
       <div class="video-wrapper">
         <% if (it.deletion_stage === 'soft_delete') { %>
           <div class="video-placeholder soft-delete">
@@ -61,28 +61,33 @@
             <p>This video has been removed.</p>
             <p class="deletion-note">Storage is limited, so I occasionally clear out things like 10-hour blank screens and similar content.</p>
           </div>
+        <% } else if (it.deletion_stage === 'cold_storage') { %>
+          <div class="video-placeholder coldstorage">
+            <p>This video has been moved to cold-storage.</p>
+            <p class="deletion-note">Videos that aren't watched often are moved to cold storage as a cost-saving measure. <br><br>They can still be retrieved. Please email me at <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.</p>
+          </div>
         <% } else { %>
           <div class="video-loading hidden" id="video-loading">Loading...</div>
           <video id="video-player" src="<%= it.source %>" poster="<%= it.thumbnail %>" controls preload="metadata"></video>
         <% } %>
       </div>
       <h1><%= it.v_title %></h1>
-    
+
       <div class="channel-profile">
         <img src="<%= it.channelAvatar %>" />
         <span class="channel-name">
           <a href="/channel/<%= it.channelId %>">
-            <%= it.channel %> 
+            <%= it.channel %>
             <% if (it.channelVerified) { %>
               <div class="verified"></div>
             <% } %>
           </a>
         </span>
       </div>
-    
+
       <div class="metadata">
         <p class="date">
-          Published on <%= it.published %>  | Archived on <%= it.archived %> 
+          Published on <%= it.published %>  | Archived on <%= it.archived %>
           <a href="<%= it.source %>" target="_blank">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -292,6 +297,11 @@
     border: 2px dashed #dc3545;
   }
 
+  .video-placeholder.coldstorage {
+    background-color: #e8f4fd;
+    border: 2px dashed #4da3d9;
+  }
+
   .video-placeholder p {
     font-size: 1.2rem;
     margin: 0.5rem 0;
@@ -360,15 +370,15 @@
     video.addEventListener('pointerdown', hide);
 
     video.addEventListener('error', () => {
-      hasTheVideoErrored = true 
+      hasTheVideoErrored = true
       loading.innerHTML = 'Video failed to load.';
 
       if (isIOSOrIPad) {
         loading.innerHTML += '<p style="font-size: medium;">It looks like you\'re on an iOS or iPadOS device. Apple devices without a hardware decoder can\'t play the kind of video Preservetube serves.</p>' +
           '<p style="font-size: medium;">Please try using a different device.</p>'
       } else {
-        loading.innerHTML += '<p style="font-size: medium;">This is not supposed to happen. Please email me at admin@preservetube.com with as much debugging information.</p>' + 
-          '<p style="font-size: medium;">Please include your browser console logs. <a style="font-style: italic;" href="https://support.happyfox.com/kb/article/882-accessing-the-browser-console-and-network-logs/">' + 
+        loading.innerHTML += '<p style="font-size: medium;">This is not supposed to happen. Please email me at admin@preservetube.com with as much debugging information.</p>' +
+          '<p style="font-size: medium;">Please include your browser console logs. <a style="font-style: italic;" href="https://support.happyfox.com/kb/article/882-accessing-the-browser-console-and-network-logs/">' +
           'See here on how to access them.</a> Please note you might have to refresh the page for anything to show up.</p>'
       }
     });
@@ -384,7 +394,7 @@
         loading.innerHTML += '<p style="font-size: medium;">This might be due one of multiple reasons:</p>'
           + '<ol style="font-size: medium;"><li>This video is large. Depending on your browser, it might try loading the full thing at one time, which will slow things down.</li>'
           + '<li>Preservetube servers are overloaded. This happens once in a while, please be patient.</li><li>You\'re in an unfavourable region, which has a bad connection to our servers.</li></ol>'
-					+ '<p style="font-size: medium;">If this takes an unusual amount of time, even after considering the above mentioned reasons, please email me at admin@preservetube.com. Don\'t forget to include your aproximate region, your browser and OS.</p>'; 
+					+ '<p style="font-size: medium;">If this takes an unusual amount of time, even after considering the above mentioned reasons, please email me at admin@preservetube.com. Don\'t forget to include your aproximate region, your browser and OS.</p>';
       }
     }, FALLBACK_MS);
 
