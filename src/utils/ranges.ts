@@ -12,10 +12,13 @@ const IPV6_FULL_MASK = (1n << IPV6_BITS) - 1n
 const NETWORKS_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000 // 6h
 const BLOCKED_DIR = path.resolve(process.cwd(), 'ranges')
 const asnBanList: number[] = [
-  206092, // expressvpn
   63023, // free vpn servers
   14618, // useless scrapers with chromium runing
-  137409, // gsl
+
+  // expressvpn
+  206092,
+  137409,
+  262287,
 
   // tor exits
   60729,

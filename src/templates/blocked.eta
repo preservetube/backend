@@ -10,17 +10,20 @@
     proxy networks.
   </p>
   <p>
+    If you're trying to bypass the rate limits, I'd really appreciate it if you didn't. It makes things worse for everyone else and only leads to even stricter limits for the all users. Please be a good internet citizen.
+  </p>
+  <p>
     If you believe this is a mistake, please contact
     <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.
   </p>
 </div>
 
-<style> 
+<style>
   .a {
     text-decoration-line: underline;
     text-decoration-style: dotted;
   }
-    
+
 	.text {
     margin-top: 2.5%;
     margin-bottom: 5%;
