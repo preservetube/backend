@@ -16,6 +16,10 @@ const asnBanList: number[] = [
   63023, // free vpn servers
   14618, // useless scrapers with chromium runing
   137409, // gsl
+
+  // tor exits
+  60729,
+  215125
 ]
 
 
