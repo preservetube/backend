@@ -13,6 +13,7 @@ const NETWORKS_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000 // 6h
 const BLOCKED_DIR = path.resolve(process.cwd(), 'ranges')
 const asnBanList: number[] = [
   63023, // free vpn servers
+  62005, // more free vpns
   14618, // useless scrapers with chromium runing
 
   // expressvpn
