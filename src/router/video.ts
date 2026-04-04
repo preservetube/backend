@@ -47,7 +47,7 @@ app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
   const json = videoVersions.find(video => video.id === v) || videoVersions[0];
 
   if (!json) {
-    const html = await m(eta.render('./watch', { 
+    const html = await m(eta.render('./watch', {
       isMissing: true,
       id: baseId,
       title: 'Video Not Found | PreserveTube',
@@ -68,6 +68,13 @@ app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
       .execute()
   }
 
+  const file = json.deletion_stage === 'cold_storage'
+    ? await db.selectFrom('files')
+      .selectAll()
+      .where('videoId', '=', json.id)
+      .executeTakeFirst()
+    : null
+
   DOMPurify.addHook('afterSanitizeAttributes', function (node) {
     if (node.tagName === 'A') {
       const disallowedPatterns: RegExp[] = [
@@ -80,11 +87,11 @@ app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
         /\/@[^\/]/i
       ];
       const href = node.getAttribute('href') || '';
-      
-      const shouldConvertToSpan = disallowedPatterns.some(pattern => 
+
+      const shouldConvertToSpan = disallowedPatterns.some(pattern =>
         pattern.test(href)
       );
-      
+
       if (shouldConvertToSpan) {
         const span = node.ownerDocument.createElement('span');
         span.innerHTML = node.innerHTML;
@@ -96,8 +103,9 @@ app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
     }
   })
 
-  const html = await m(eta.render('./watch', { 
+  const html = await m(eta.render('./watch', {
     transparency,
+    file,
     versions: videoVersions.map(video => ({
       id: video.id,
       archived: video.archived
@@ -135,12 +143,23 @@ Please identify yourself with a User-Agent in the format: AppName/1.0 (a way for
     .executeTakeFirst()
 
   if (!json) return error(404, { error: '404' })
-  await redis.set(`video:${id}`, JSON.stringify(json), 'EX', 3600)
 
-  return {
+  const file = json.deletion_stage === 'cold_storage'
+    ? await db.selectFrom('files')
+      .selectAll()
+      .where('videoId', '=', json.id)
+      .executeTakeFirst()
+    : null
+
+  const payload = {
     ...json,
+    file,
     description: DOMPurify.sanitize(json.description),
   }
+
+  await redis.set(`video:${id}`, JSON.stringify(payload), 'EX', 3600)
+
+  return payload
 })
 
 app.get('/channel/:id', async ({ params: { id }, set }) => {
@@ -156,7 +175,7 @@ app.get('/channel/:id', async ({ params: { id }, set }) => {
   ])
 
   if (!videos || !channel || videos.error || channel.error) {
-    const html = await m(eta.render('./channel', { 
+    const html = await m(eta.render('./channel', {
       failedToFetch: true,
       id
     }))
@@ -187,7 +206,7 @@ app.get('/channel/:id', async ({ params: { id }, set }) => {
 
   processedVideos.sort((a: any, b: any) => new Date(b.published).getTime() - new Date(a.published).getTime());
 
-  const html = await m(eta.render('./channel', { 
+  const html = await m(eta.render('./channel', {
     name: channel.metadata.title,
     avatar: channel.metadata.avatar[0].url,
     verified: channel.header.author?.is_verified,
@@ -196,7 +215,7 @@ app.get('/channel/:id', async ({ params: { id }, set }) => {
     keywords: `${channel.metadata.title} archive, ${channel.metadata.title} channel archive, ${channel.metadata.title} deleted video, ${channel.metadata.title} video deleted`
   }))
   await redis.set(`channel:${id}:html`, html, 'EX', 3600)
-  
+
   set.headers['Content-Type'] = 'text/html; charset=utf-8'
   return html
 })
@@ -214,7 +233,7 @@ app.get('/channel/:id/videos', async ({ params: { id }, set }) => {
     .orderBy('published desc')
     .execute()
 
-  const html = await m(eta.render('./channel-videos', { 
+  const html = await m(eta.render('./channel-videos', {
     videos: archived,
     title: `${id} videos | PreserveTube`,
     keywords: `${id} archive, ${id} channel archive, ${id} deleted video, ${id} video deleted`

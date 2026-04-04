@@ -1,5 +1,29 @@
 <% layout('./layout') %>
 
+<%
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 B'
+    const units = ['B', 'KB', 'MB', 'GB', 'TB']
+    const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+    const value = bytes / Math.pow(1024, exponent)
+    return `${value >= 10 || exponent === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[exponent]}`
+  }
+
+  const formatDuration = (seconds) => {
+    const totalSeconds = Math.max(0, Math.floor(seconds))
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const secs = totalSeconds % 60
+    const parts = []
+
+    if (hours) parts.push(`${hours}h`)
+    if (minutes) parts.push(`${minutes}m`)
+    if (secs || parts.length === 0) parts.push(`${secs}s`)
+
+    return parts.join(' ')
+  }
+%>
+
 <% if (it.isMissing) { %>
   <div class="error">
     <h2>Archive not found</h2>
@@ -43,28 +67,39 @@
         </div>
       <% } %>
 
-      <% if (it.deletion_stage === 'pending_delete') { %>
-        <div class="deletion-banner pending">
-          <span class="deletion-title">Heads up — this video is scheduled for deletion.</span>
-          <p>Got questions or think this is a mistake? Drop me an email at <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.</p>
+      <% if (it.deletion_stage !== null) { %>
+        <div class="deletion-banner <%= it.deletion_stage %>">
+          <% if (it.deletion_stage === 'pending_delete') { %>
+            <span class="deletion-title">Heads up: this video is scheduled for deletion.</span>
+            <p>It is still available right now, but it has been flagged for removal. Got questions or think this is a mistake? Drop me an email at <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.</p>
+          <% } else if (it.deletion_stage === 'soft_delete') { %>
+            <span class="deletion-title">This video has been moved to cold storage and will be permanently deleted soon.</span>
+            <p>If you'd like to retrieve it, email me at <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.</p>
+          <% } else if (it.deletion_stage === 'deleted') { %>
+            <span class="deletion-title">This video has been removed.</span>
+            <p>Storage is limited, so I occasionally clear out things like 10-hour blank screens and similar content. The thumbnail and metadata remain here so there is still a public record of what used to be preserved.</p>
+          <% } else if (it.deletion_stage === 'cold_storage') { %>
+            <span class="deletion-title">This video has been moved to cold storage.</span>
+            <p>Videos that aren't watched often are moved to cold storage as a cost-saving measure. They can still be retrieved. Please email me at <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.</p>
+          <% } %>
         </div>
+
+        <% if (it.deletion_stage === 'cold_storage' && it.file) { %>
+          <div class="cold-storage-files">
+            <div class="cold-storage-file">
+              <span><strong>Size:</strong> <%= formatBytes(it.file.size_bytes) %></span>
+              <span><strong>Duration:</strong> <%= formatDuration(it.file.duration_seconds) %></span>
+              <span><strong>Resolution:</strong> <%= it.file.resolution %> (<%= it.file.fps %> FPS)</span>
+              <span><strong>Hash (<%= it.file.hash_algorithm %>):</strong> <code><%= it.file.hash %></code></span>
+            </div>
+          </div>
+        <% } %>
       <% } %>
 
       <div class="video-wrapper">
-        <% if (it.deletion_stage === 'soft_delete') { %>
-          <div class="video-placeholder soft-delete">
-            <p>This video has been moved to cold storage and will be permanently deleted soon.</p>
-            <p class="deletion-note">If you'd like to retrieve it, email me at <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.</p>
-          </div>
-        <% } else if (it.deletion_stage === 'deleted') { %>
-          <div class="video-placeholder deleted">
-            <p>This video has been removed.</p>
-            <p class="deletion-note">Storage is limited, so I occasionally clear out things like 10-hour blank screens and similar content.</p>
-          </div>
-        <% } else if (it.deletion_stage === 'cold_storage') { %>
-          <div class="video-placeholder coldstorage">
-            <p>This video has been moved to cold-storage.</p>
-            <p class="deletion-note">Videos that aren't watched often are moved to cold storage as a cost-saving measure. <br><br>They can still be retrieved. Please email me at <a href="mailto:admin@preservetube.com">admin@preservetube.com</a>.</p>
+        <% if (it.deletion_stage !== null) { %>
+          <div class="thumbnail-frame">
+            <img class="video-thumbnail" src="<%= it.thumbnail %>" alt="Thumbnail for <%= it.v_title %>" />
           </div>
         <% } else { %>
           <div class="video-loading hidden" id="video-loading">Loading...</div>
@@ -95,6 +130,7 @@
           </a>
         </p>
         <p class="description"><%~ it.description %></p>
+
       </div>
     </div>
   </div>
@@ -180,6 +216,41 @@
     margin-top: 1rem;
   }
 
+  .cold-storage-files {
+    margin-top: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .cold-storage-file {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .cold-storage-file span {
+    white-space: nowrap;
+    background: #fff;
+    border: 1px solid #d7d7d7;
+    padding: 0.35rem 0.55rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .cold-storage-file code {
+    word-break: break-all;
+    white-space: normal;
+  }
+
+  @media (max-width: 900px) {
+    .cold-storage-file {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+
   .verified {
     height: 15px;
     content: url('https://api.iconify.design/ion/checkmark-circle.svg');
@@ -212,7 +283,7 @@
 
   .video-wrapper {
     position: relative;
-    display: inline-block;
+    display: block;
     width: 100%;
     max-height: 720px;
   }
@@ -250,9 +321,24 @@
     margin-bottom: 0.5rem;
   }
 
-  .deletion-banner.pending {
+  .deletion-banner.pending_delete {
     background-color: #ffe0e0;
     border: 2px dashed #ff6b6b;
+  }
+
+  .deletion-banner.soft_delete {
+    background-color: #fbf6e3;
+    border: 2px dashed #ffc107;
+  }
+
+  .deletion-banner.deleted {
+    background-color: #f6e8e9;
+    border: 2px dashed #dc3545;
+  }
+
+  .deletion-banner.cold_storage {
+    background-color: #e8f4fd;
+    border: 2px dashed #4da3d9;
   }
 
   .deletion-title {
@@ -272,46 +358,60 @@
     text-decoration: underline;
   }
 
-  .video-placeholder {
+  .thumbnail-frame {
+    width: 100%;
+    max-height: 720px;
+    aspect-ratio: 16 / 9;
+    margin-top: 5px;
+    overflow: hidden;
+    background: #111;
+  }
+
+  .video-thumbnail {
     width: 100%;
     height: 100%;
-    min-height: 400px;
+    display: block;
+    object-fit: cover;
+  }
+
+  .deletion-card {
+    width: min(16rem, 100%);
+    min-height: 16rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 2rem;
+    text-align: left;
+    padding: 1rem 1.25rem;
     margin-top: 5px;
+    margin-bottom: 0.75rem;
     box-sizing: border-box;
     border-radius: 4px;
   }
 
-  .video-placeholder.soft-delete {
+  .deletion-card.soft-delete {
     background-color: #fbf6e3;
     border: 2px dashed #ffc107;
   }
 
-  .video-placeholder.deleted {
+  .deletion-card.deleted {
     background-color: #f6e8e9;
     border: 2px dashed #dc3545;
   }
 
-  .video-placeholder.coldstorage {
+  .deletion-card.coldstorage {
     background-color: #e8f4fd;
     border: 2px dashed #4da3d9;
   }
 
-  .video-placeholder p {
-    font-size: 1.2rem;
-    margin: 0.5rem 0;
-    max-width: 80%;
+  .deletion-card p {
+    font-size: 1rem;
+    margin: 0;
   }
 
-  .video-placeholder .deletion-note {
+  .deletion-card .deletion-note {
     font-size: 1rem;
     color: #666;
-    margin-top: 1rem;
+    margin-top: 0.75rem;
   }
 
   @media (max-width: 1100px) {

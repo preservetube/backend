@@ -8,6 +8,7 @@ import type {
 export interface Database {
   videos: VideosTable
   reports: ReportsTable
+  files: FilesTable
 }
 
 export interface VideosTable {
@@ -44,3 +45,20 @@ export interface ReportsTable {
 export type Report = Selectable<ReportsTable>
 export type NewReport = Insertable<ReportsTable>
 export type UpdateReport = Updateable<ReportsTable>
+
+export interface FilesTable {
+  uuid: Generated<string>
+  videoId: string
+  filename: string
+  hash: string
+  hash_algorithm: string
+  size_bytes: number
+  duration_seconds: number
+  video_codec: string
+  audio_codec: string
+  resolution: string
+  fps: number
+}
+
+export type File = Selectable<FilesTable>
+export type NewFile = Insertable<FilesTable>
