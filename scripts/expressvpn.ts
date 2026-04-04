@@ -25,7 +25,7 @@ function inetnumToCIDR(value: string): string[] {
 const orgs = await (await fetch('https://apps.db.ripe.net/db-web-ui/api/whois/search?abuse-contact=true&ignore404=true&managed-attributes=true&resource-holder=true&type-filter=ORGANISATION&flags=r&offset=0&limit=200&query-string=VPN%20Consumer')).json()
 const orgId = orgs.objects.object.map(o => o.attributes.attribute.find(a => a.name === 'organisation').value)
 
-for (const o of orgId) {
+for (const o of [...orgId, 'ORG-ETL39-RIPE']) {
   const orgReq = await fetch(`https://apps.db.ripe.net/db-web-ui/api/whois/search?abuse-contact=true&ignore404=true&managed-attributes=true&resource-holder=true&type-filter=INETNUM,INET6NUM&inverse-attribute=ORG&flags=r&offset=0&limit=200&query-string=${o}`)
   if (orgReq.status == 404) {
     console.log(`no inetnum/inet6num for ${o}`)
