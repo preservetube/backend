@@ -55,7 +55,12 @@ app.get('/save', async ({ query: { url }, set, headers, error, request, redirect
   }))
 })
 
-app.get('/savechannel', async ({ query: { url }, set, headers, error }) => {
+app.get('/savechannel', async ({ query: { url }, set, headers, error, request, redirect }) => {
+  if (headers.host?.split(':')[0] !== 'preservetube.com') {
+    const parsedUrl = new URL(request.url)
+    return redirect(`https://preservetube.com${parsedUrl.pathname}${parsedUrl.search}`)
+  }
+
   if (!url) return error(400, 'No url provided.')
 
   const ranges = await checkIpRanges(headers['cf-connecting-ip'] || headers['x-forwarded-for'] || '')

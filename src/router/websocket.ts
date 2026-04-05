@@ -48,7 +48,7 @@ const cleanup = async (ws: any, videoId: string) => {
 };
 
 const handleUpload = async (ws: any, videoId: string, isChannel: boolean = false) => {
-  // the pattern of files that have finished downloading is [videoid].mp4, but some extensions are also possible due to 
+  // the pattern of files that have finished downloading is [videoid].mp4, but some extensions are also possible due to
   // current youtube changes, so we need to make sure the other extensions are also covered
   let filePath = fs.readdirSync('./videos/').find(f => f.includes(`${videoId}.`))
   if (!filePath) {
@@ -101,9 +101,9 @@ app.ws('/save', {
   open: async (ws) => {
     const range = await checkIpRanges(ws.data.headers['x-forwarded-for'] || '')
     if (range.list != 'cloudflare') return sendError(ws, 'There\'s something wrong with your connection.')
-    
+
     const blacklistCheck = await checkIpRanges(ws.data.headers['cf-connecting-ip']!)
-    if (blacklistCheck.blocked) return sendError(ws, `Your network is flagged as malicious.`)
+    if (blacklistCheck.blocked || ws.data.headers['cf-ipcountry'] == 'T1') return sendError(ws, `Your network is flagged as malicious.`)
 
     console.log(`${ws.id} - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
 
@@ -137,7 +137,7 @@ app.ws('/save', {
     }
   },
   message: async (ws, message) => {
-    if (message == 'alive') return 
+    if (message == 'alive') return
 
     const videoId = videoIds[ws.id];
     if (!videoId) return sendError(ws, 'No video ID associated with this session.');
@@ -159,10 +159,10 @@ app.ws('/save', {
         return sendError(ws, 'Unable to retrieve video info from YouTube. Please try again later.')
       }
 
-      const isSlop = await parseSlop(videoId, data.videoDetails.title, 
-        (data.microformat.playerMicroformatRenderer.description?.simpleText || '').replaceAll('\n', '<br>'), 
+      const isSlop = await parseSlop(videoId, data.videoDetails.title,
+        (data.microformat.playerMicroformatRenderer.description?.simpleText || '').replaceAll('\n', '<br>'),
         data.videoDetails.channelId)
-      
+
       if (isSlop) {
         sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com<br>', false);
         sendError(ws, '<br>Read more about which videos aren\'t suitable on our <a href="/about">FAQ</a> page.', false)
@@ -214,7 +214,7 @@ app.ws('/savechannel', {
     if (range.list != 'cloudflare') return sendError(ws, 'There\'s something wrong with your connection.')
 
     const blacklistCheck = await checkIpRanges(ws.data.headers['cf-connecting-ip']!)
-    if (blacklistCheck.blocked) return sendError(ws, `Your network is flagged as malicious.`)
+    if (blacklistCheck.blocked || ws.data.headers['cf-ipcountry'] == 'T1') return sendError(ws, `Your network is flagged as malicious.`)
 
     console.log(`${ws.id} - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
 
@@ -227,7 +227,7 @@ app.ws('/savechannel', {
     videoIds[ws.id] = `captcha-${channelId}`;
   },
   message: async (ws, message) => {
-    if (message == 'alive') return 
+    if (message == 'alive') return
 
     const status = videoIds[ws.id];
     if (!status || !status.startsWith('captcha-')) return sendError(ws, 'No channel associated with this session.');
@@ -252,7 +252,7 @@ app.ws('/savechannel', {
 
     for (const video of videos.slice(0, 5)) {
       if (!video || (await redis.get(saveKey(video.video_id))) || (await redis.get(`blacklist:${video.video_id}`))) continue;
-     
+
       const already = await db.selectFrom('videos')
         .select('id')
         .where('id', '=', video.video_id)
@@ -271,9 +271,9 @@ app.ws('/savechannel', {
 
       console.log(`saving (${subjects.map(subject => Bun.hash(subject).toString()).join(',')}) - ${ws.data.path} - ${video.video_id}`)
 
-      const isSlop = await parseSlop(video.video_id, video.title.text, 
+      const isSlop = await parseSlop(video.video_id, video.title.text,
         video.description_snippet?.text || '', channelId)
-      
+
       if (isSlop) {
         sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com<br>', false);
         sendError(ws, '<br>Read more about which videos aren\'t suitable on our <a href="/about">FAQ</a> page.', false)
