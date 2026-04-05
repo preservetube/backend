@@ -11,6 +11,7 @@ import { error } from '@/utils/html'
 import redis from '@/utils/redis';
 import { parseSlop } from '@/utils/slop';
 import { checkIpRanges } from '@/utils/ranges';
+import { getRateLimitSubjects } from '@/utils/rate-limit';
 
 const app = new Elysia()
 const videoIds: Record<string, string> = {}
@@ -18,15 +19,19 @@ const videoIds: Record<string, string> = {}
 const MB_LIMIT = 250
 const saveKey = (videoId: string) => `save:${videoId}`
 
-const checkMbLimit = async (hash: string, mb?: number): Promise<boolean> => {
-  const key = `save-mb:${hash}`
-  const current = parseInt(await redis.get(key) || '0')
-  if (!mb) return current >= MB_LIMIT
-  if (current + mb > MB_LIMIT) return true
+const checkMbLimit = async (subjects: string[], mb?: number): Promise<boolean> => {
+  const keys = subjects.map(subject => `save-mb:${Bun.hash(subject).toString()}`)
+  const currentValues = await Promise.all(keys.map(key => redis.get(key)))
+  const currents = currentValues.map(value => parseInt(value || '0'))
+
+  if (!mb) return currents.some(current => current >= MB_LIMIT)
+  if (currents.some(current => current + mb > MB_LIMIT)) return true
 
   const pipeline = redis.pipeline()
-  pipeline.incrby(key, mb)
-  pipeline.expire(key, 24 * 60 * 60)
+  for (const key of keys) {
+    pipeline.incrby(key, mb)
+    pipeline.expire(key, 24 * 60 * 60)
+  }
   await pipeline.exec()
   return false
 }
@@ -89,7 +94,8 @@ const getRateLimitKey = (ip: string): string => {
 
 app.ws('/save', {
   query: t.Object({
-    url: t.String()
+    url: t.String(),
+    rlid: t.Optional(t.String())
   }),
   body: t.String(),
   open: async (ws) => {
@@ -115,13 +121,16 @@ app.ws('/save', {
       ws.send(`DONE - ${process.env.FRONTEND}/watch?v=${videoId}`)
       ws.close()
     } else {
-      const hash = Bun.hash(getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'))
-      const isLimited = await checkMbLimit(hash.toString())
+      const subjects = getRateLimitSubjects(
+        getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'),
+        ws.data.query.rlid
+      )
+      const isLimited = await checkMbLimit(subjects)
       if (isLimited) {
         return sendError(ws, 'You have been ratelimited. </br>Is this an urgent archive? Please email me: admin@preservetube.com');
       }
 
-      console.log(`saving (${hash}) - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
+      console.log(`saving (${subjects.map(subject => Bun.hash(subject).toString()).join(',')}) - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
       ws.send('DATA - This process is automatic. Your video will start archiving shortly.')
       ws.send('CAPTCHA - Solving a cryptographic challenge before downloading.')
       videoIds[ws.id] = videoId
@@ -167,8 +176,11 @@ app.ws('/save', {
       }
 
       const mbsUsed = Math.ceil(downloadResult.size / (1024 * 1024))
-      const hash = Bun.hash(getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'))
-      const isMbLimited = await checkMbLimit(hash.toString(), mbsUsed)
+      const subjects = getRateLimitSubjects(
+        getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'),
+        ws.data.query.rlid
+      )
+      const isMbLimited = await checkMbLimit(subjects, mbsUsed)
       if (isMbLimited) {
         const file = fs.readdirSync('./videos/').find(f => f.includes(`${videoId}.`))
         if (file) fs.unlinkSync('./videos/' + file)
@@ -193,7 +205,8 @@ app.ws('/save', {
 
 app.ws('/savechannel', {
   query: t.Object({
-    url: t.String()
+    url: t.String(),
+    rlid: t.Optional(t.String())
   }),
   body: t.String(),
   open: async (ws) => {
@@ -246,14 +259,17 @@ app.ws('/savechannel', {
         .executeTakeFirst()
       if (already) continue
 
-      const hash = Bun.hash(getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'))
-      const isLimited = await checkMbLimit(hash.toString())
+      const subjects = getRateLimitSubjects(
+        getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'),
+        ws.data.query.rlid
+      )
+      const isLimited = await checkMbLimit(subjects)
       if (isLimited) {
         sendError(ws, 'You have been ratelimited. </br>Is this an urgent archive? Please email me: admin@preservetube.com', false);
         break;
       }
 
-      console.log(`saving (${hash}) - ${ws.data.path} - ${video.video_id}`)
+      console.log(`saving (${subjects.map(subject => Bun.hash(subject).toString()).join(',')}) - ${ws.data.path} - ${video.video_id}`)
 
       const isSlop = await parseSlop(video.video_id, video.title.text, 
         video.description_snippet?.text || '', channelId)
@@ -271,7 +287,7 @@ app.ws('/savechannel', {
       const downloadResult = await downloadVideo(ws, video.video_id);
       if (!downloadResult.fail) {
         const mbsUsed = Math.ceil(downloadResult.size / (1024 * 1024))
-        const isMbLimited = await checkMbLimit(hash.toString(), mbsUsed)
+        const isMbLimited = await checkMbLimit(subjects, mbsUsed)
         if (isMbLimited) {
           const file = fs.readdirSync('./videos/').find(f => f.includes(`${video.video_id}.`))
           if (file) fs.unlinkSync('./videos/' + file)

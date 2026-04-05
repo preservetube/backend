@@ -45,6 +45,7 @@
   const url = "<%= it.url %>"
   const websocket = "<%= it.websocket %>"
   const sitekey = "<%= it.sitekey %>"
+  const initialRateLimitId = "<%= it.rateLimitId %>"
   let ws = null
   const h1 = document.getElementById("title")
   const h3 = document.getElementById("bottom")
@@ -53,8 +54,33 @@
   const acceptInstructions = document.getElementById("accept-instructions")
   const declineInstructions = document.getElementById("decline-instructions")
 
+  function getRateLimitId() {
+    if (initialRateLimitId) {
+      return initialRateLimitId
+    }
+
+    try {
+      const stored = localStorage.getItem("pt_rlid")
+      if (stored) {
+        return stored
+      }
+    } catch {
+    }
+
+    return initialRateLimitId
+  }
+
+  function persistRateLimitId(rateLimitId) {
+    try {
+      localStorage.setItem("pt_rlid", rateLimitId)
+    } catch {
+    }
+  }
+
   function startSaveFlow() {
-    ws = new WebSocket(`${websocket}/save?url=${encodeURIComponent(url)}`)
+    const rateLimitId = getRateLimitId()
+    persistRateLimitId(rateLimitId)
+    ws = new WebSocket(`${websocket}/save?url=${encodeURIComponent(url)}&rlid=${encodeURIComponent(rateLimitId)}`)
 
     ws.onopen = function () {
       document.querySelector("footer").innerHTML = `page rendered by <code><%= hostname %></code>, connected via <code>${websocket.split('-')[1].split('.')[0]}</code>`
@@ -145,6 +171,7 @@
   }, 2000)
 
   runFirstSaveGate()
+  persistRateLimitId(initialRateLimitId)
 </script>
 <% } %>
 

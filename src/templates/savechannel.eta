@@ -13,7 +13,27 @@
   const url = "<%= it.url %>"
   const websocket = "<%= it.websocket %>"
   const sitekey = "<%= it.sitekey %>"
-  const ws = new WebSocket(`${websocket}/savechannel?url=${encodeURIComponent(url)}`)
+  const initialRateLimitId = "<%= it.rateLimitId %>"
+  function getRateLimitId() {
+    if (initialRateLimitId) {
+      return initialRateLimitId
+    }
+
+    try {
+      const stored = localStorage.getItem("pt_rlid")
+      if (stored) {
+        return stored
+      }
+    } catch {
+    }
+
+    return initialRateLimitId
+  }
+  try {
+    localStorage.setItem("pt_rlid", initialRateLimitId)
+  } catch {
+  }
+  const ws = new WebSocket(`${websocket}/savechannel?url=${encodeURIComponent(url)}&rlid=${encodeURIComponent(getRateLimitId())}`)
   const h1 = document.getElementById("title")
   const h3 = document.getElementById("bottom")
   const captcha = document.getElementById("captcha")

@@ -2,6 +2,11 @@ import { Elysia } from 'elysia';
 import { m, eta, error } from '@/utils/html'
 import healthStatus from '@/utils/health';
 import { checkIpRanges } from '@/utils/ranges';
+import {
+  buildRateLimitCookie,
+  createRateLimitCookieValue,
+  getRateLimitCookie,
+} from '@/utils/rate-limit';
 const app = new Elysia()
 
 app.get('/', async ({ set }) => {
@@ -29,15 +34,20 @@ app.get('/save', async ({ query: { url }, set, headers, error }) => {
     websocket = process.env.ALTERNATIVE_WEBSOCKET!
   }
   const ytPatched = (process.env.YT_PATCHED || '').toLowerCase() === 'true' || process.env.YT_PATCHED === '1'
+  const rateLimitId = getRateLimitCookie(headers.cookie) || createRateLimitCookieValue()
+  if (!getRateLimitCookie(headers.cookie)) {
+    set.headers['Set-Cookie'] = buildRateLimitCookie(rateLimitId)
+  }
 
   set.headers['Content-Type'] = 'text/html; charset=utf-8'
-  return error(412, await m(eta.render('./save', {
+  return await m(eta.render('./save', {
     title: 'Save Video | PreserveTube',
     websocket,
     sitekey: process.env.SITEKEY,
     url,
-    ytPatched
-  })))
+    ytPatched,
+    rateLimitId
+  }))
 })
 
 app.get('/savechannel', async ({ query: { url }, set, headers, error }) => {
@@ -46,14 +56,18 @@ app.get('/savechannel', async ({ query: { url }, set, headers, error }) => {
   const ranges = await checkIpRanges(headers['cf-connecting-ip'] || headers['x-forwarded-for'] || '')
   if (ranges.blocked) {
     set.headers['Content-Type'] = 'text/html; charset=utf-8'
-    return await m(eta.render('./blocked', {
+    return error(412, await m(eta.render('./blocked', {
       title: 'Blocked | PreserveTube'
-    }))
+    })))
   }
 
   let websocket = process.env.WEBSOCKET
   if (healthStatus[process.env.METADATA!] != 'healthy') {
     websocket = process.env.ALTERNATIVE_WEBSOCKET!
+  }
+  const rateLimitId = getRateLimitCookie(headers.cookie) || createRateLimitCookieValue()
+  if (!getRateLimitCookie(headers.cookie)) {
+    set.headers['Set-Cookie'] = buildRateLimitCookie(rateLimitId)
   }
 
   set.headers['Content-Type'] = 'text/html; charset=utf-8'
@@ -61,7 +75,8 @@ app.get('/savechannel', async ({ query: { url }, set, headers, error }) => {
     title: 'Save Channel | PreserveTube',
     websocket,
     sitekey: process.env.SITEKEY,
-    url
+    url,
+    rateLimitId
   }))
 })
 
