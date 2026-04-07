@@ -12,9 +12,17 @@ const IPV6_FULL_MASK = (1n << IPV6_BITS) - 1n
 const NETWORKS_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000 // 6h
 const BLOCKED_DIR = path.resolve(process.cwd(), 'ranges')
 const asnBanList: number[] = [
-  63023, // free vpn servers
-  62005, // more free vpns
-  14618, // useless scrapers with chromium runing
+  // free vpn servers
+  63023, // gthost
+  62005, // bluevps
+  14061, // digital ocean
+  20473, // vultur
+  57169, // edis
+  50613, // edis iceland
+  203020, // hostroyale (also get's some paid vpns, sorry)
+  16276, // ovh
+
+  14618, // aws
 
   // expressvpn
   206092,
