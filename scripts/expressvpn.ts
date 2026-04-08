@@ -51,4 +51,29 @@ for (const o of [...orgId, 'ORG-ETL39-RIPE']) {
   }
 }
 
+let start = 0
+
+while (true) {
+  const ips = await (await fetch(`https://apps.db.ripe.net/db-web-ui/api/rest/fulltextsearch/select?facet=true&format=xml&hl=true&q=(netname:(%22VPN%5C-Consumer%5C-Network%22))%20AND%20(object-type:inetnum)&start=${start}&wt=json`, {
+    headers: {
+      'Accept': 'application/json, text/plain, */*'
+    }
+  })).json()
+  start = start + 10
+
+  if (!ips.result.docs) break;
+
+  const primaries = ips.result.docs.map(o => o.doc.strs.find(s => s.str.name.startsWith('inetnum')).str)
+  for (const p of primaries) {
+    if (p.name == 'inetnum') {
+      console.log(inetnumToCIDR(p.value).join('\n'))
+      writer.write(inetnumToCIDR(p.value).join('\n') + '\n')
+    } else if (p.name == 'inet6num') {
+      console.log(p.value)
+      writer.write(p.value + '\n')
+    }
+  }
+}
+
+writer.flush()
 writer.end();
