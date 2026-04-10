@@ -21,6 +21,7 @@ const asnBanList: number[] = [
   50613, // edis iceland
   203020, // hostroyale (also get's some paid vpns, sorry)
   16276, // ovh
+  396356, // latitude.sh
 
   14618, // aws
 
