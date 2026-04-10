@@ -22,6 +22,7 @@ const asnBanList: number[] = [
   203020, // hostroyale (also get's some paid vpns, sorry)
   16276, // ovh
   396356, // latitude.sh
+  49367, // seflow
 
   14618, // aws
 
