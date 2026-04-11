@@ -30,6 +30,7 @@ const asnBanList: number[] = [
   206092,
   137409,
   262287,
+  29066,
 
   // tor exits
   60729,

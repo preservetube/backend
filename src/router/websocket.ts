@@ -11,21 +11,40 @@ import { error } from '@/utils/html'
 import redis from '@/utils/redis';
 import { parseSlop } from '@/utils/slop';
 import { checkIpRanges } from '@/utils/ranges';
-import { getRateLimitSubjects } from '@/utils/rate-limit';
+import { getRateLimitState, getRateLimitSubjects } from '@/utils/rate-limit';
 
 const app = new Elysia()
 const videoIds: Record<string, string> = {}
 
-const MB_LIMIT = 250
 const saveKey = (videoId: string) => `save:${videoId}`
 
-const checkMbLimit = async (subjects: string[], mb?: number): Promise<boolean> => {
-  const keys = subjects.map(subject => `save-mb:${Bun.hash(subject).toString()}`)
-  const currentValues = await Promise.all(keys.map(key => redis.get(key)))
-  const currents = currentValues.map(value => parseInt(value || '0'))
+const DEFAULT_STORAGE_LIMIT_MESSAGE = 'Daily storage limit reached. Is this an urgent archive? Please email me: admin@preservetube.com'
+const NEW_VISITOR_STORAGE_LIMIT_MESSAGE = 'You are a new visitor, so your storage limit is lower for the first few hours. Please come back later. </br>Is this an urgent archive? Please email me: admin@preservetube.com'
 
-  if (!mb) return currents.some(current => current >= MB_LIMIT)
-  if (currents.some(current => current + mb > MB_LIMIT)) return true
+const checkMbLimit = async (subjects: string[], mb?: number): Promise<{ isLimited: boolean, isNewVisitorLimited: boolean }> => {
+  const keys = subjects.map(subject => `save-mb:${Bun.hash(subject).toString()}`)
+  const [currentValues, states] = await Promise.all([
+    Promise.all(keys.map(key => redis.get(key))),
+    Promise.all(subjects.map(subject => getRateLimitState(subject)))
+  ])
+  const currents = currentValues.map(value => parseInt(value || '0'))
+  const limitedIndexes = currents
+    .map((current, index) => {
+      const limit = states[index]!.limit
+      if (mb === undefined) return current >= limit ? index : -1
+      return current + mb > limit ? index : -1
+    })
+    .filter(index => index !== -1)
+
+  if (limitedIndexes.length > 0) {
+    return {
+      isLimited: true,
+      isNewVisitorLimited: limitedIndexes.some(index => states[index]!.isNewVisitor)
+    }
+  }
+  if (mb === undefined) {
+    return { isLimited: false, isNewVisitorLimited: false }
+  }
 
   const pipeline = redis.pipeline()
   for (const key of keys) {
@@ -33,7 +52,7 @@ const checkMbLimit = async (subjects: string[], mb?: number): Promise<boolean> =
     pipeline.expire(key, 24 * 60 * 60)
   }
   await pipeline.exec()
-  return false
+  return { isLimited: false, isNewVisitorLimited: false }
 }
 
 const sendError = (ws: any, message: string, close: boolean = true) => {
@@ -125,9 +144,9 @@ app.ws('/save', {
         getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'),
         ws.data.query.rlid
       )
-      const isLimited = await checkMbLimit(subjects)
-      if (isLimited) {
-        return sendError(ws, 'You have been ratelimited. </br>Is this an urgent archive? Please email me: admin@preservetube.com');
+      const limitStatus = await checkMbLimit(subjects)
+      if (limitStatus.isLimited) {
+        return sendError(ws, limitStatus.isNewVisitorLimited ? NEW_VISITOR_STORAGE_LIMIT_MESSAGE : DEFAULT_STORAGE_LIMIT_MESSAGE);
       }
 
       console.log(`saving (${subjects.map(subject => Bun.hash(subject).toString()).join(',')}) - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
@@ -180,12 +199,12 @@ app.ws('/save', {
         getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'),
         ws.data.query.rlid
       )
-      const isMbLimited = await checkMbLimit(subjects, mbsUsed)
-      if (isMbLimited) {
+      const limitStatus = await checkMbLimit(subjects, mbsUsed)
+      if (limitStatus.isLimited) {
         const file = fs.readdirSync('./videos/').find(f => f.includes(`${videoId}.`))
         if (file) fs.unlinkSync('./videos/' + file)
         await cleanup(ws, videoId);
-        return sendError(ws, 'Daily storage limit reached. Is this an urgent archive? Please email me: admin@preservetube.com');
+        return sendError(ws, limitStatus.isNewVisitorLimited ? NEW_VISITOR_STORAGE_LIMIT_MESSAGE : DEFAULT_STORAGE_LIMIT_MESSAGE);
       }
 
       const uploadSuccess = await handleUpload(ws, videoId);
@@ -263,9 +282,9 @@ app.ws('/savechannel', {
         getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'),
         ws.data.query.rlid
       )
-      const isLimited = await checkMbLimit(subjects)
-      if (isLimited) {
-        sendError(ws, 'You have been ratelimited. </br>Is this an urgent archive? Please email me: admin@preservetube.com', false);
+      const limitStatus = await checkMbLimit(subjects)
+      if (limitStatus.isLimited) {
+        sendError(ws, limitStatus.isNewVisitorLimited ? NEW_VISITOR_STORAGE_LIMIT_MESSAGE : DEFAULT_STORAGE_LIMIT_MESSAGE, false);
         break;
       }
 
@@ -287,11 +306,11 @@ app.ws('/savechannel', {
       const downloadResult = await downloadVideo(ws, video.video_id);
       if (!downloadResult.fail) {
         const mbsUsed = Math.ceil(downloadResult.size / (1024 * 1024))
-        const isMbLimited = await checkMbLimit(subjects, mbsUsed)
-        if (isMbLimited) {
+        const limitStatus = await checkMbLimit(subjects, mbsUsed)
+        if (limitStatus.isLimited) {
           const file = fs.readdirSync('./videos/').find(f => f.includes(`${video.video_id}.`))
           if (file) fs.unlinkSync('./videos/' + file)
-          sendError(ws, 'Daily storage limit reached. Is this an urgent archive? Please email me: admin@preservetube.com', false);
+          sendError(ws, limitStatus.isNewVisitorLimited ? NEW_VISITOR_STORAGE_LIMIT_MESSAGE : DEFAULT_STORAGE_LIMIT_MESSAGE, false);
           break;
         }
         await handleUpload(ws, video.video_id, true);

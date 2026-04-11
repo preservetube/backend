@@ -20,7 +20,6 @@
     "@types/pg": "^8.11.10",
     "@types/ws": "^8.18.1",
     "age-encryption": "^0.2.4",
-    "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "elysia": "^1.1.25",
     "eta": "^4.0.1",
