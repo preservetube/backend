@@ -11,7 +11,7 @@ redis.on('ready', async function () {
 
   setInterval(async () => {
     const files = fs.readdirSync('videos')
-    const targetFiles = files.filter((file) => file.endsWith('.webm') || file.endsWith('.m4a'))
+    const targetFiles = files.filter((file) => file.endsWith('.webm') || file.endsWith('.mp4') || file.endsWith('.m4a'))
     targetFiles.forEach(async (f) => {
       const videoId = f.includes('_') ? f.split('_')[0] : f.replace('.mp4', '')
       const isActive = await redis.get(videoId)
