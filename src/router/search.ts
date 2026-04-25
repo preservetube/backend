@@ -32,9 +32,10 @@ app.get('/search', async ({ headers, query: { search }, set, redirect, error }) 
   const videos = await db.selectFrom('videos')
     .selectAll()
     .where('title', 'ilike', `%${search}%`)
+    .where('disabled', '=', false)
     .execute()
 
-  const html = await m(eta.render('./search', { 
+  const html = await m(eta.render('./search', {
     data: videos,
     title: 'Search | PreserveTube',
   }))

@@ -14,12 +14,13 @@ app.get('/latest', async ({ set }) => {
   }
 
   const json = await db.selectFrom('videos')
+    .where('disabled', '=', false)
     .select(['id', 'title', 'thumbnail', 'published', 'archived', 'channel', 'channelId', 'channelAvatar', 'channelVerified'])
     .orderBy('archived desc')
     .limit(51)
     .execute()
-  
-  const html = await m(eta.render('./latest', { 
+
+  const html = await m(eta.render('./latest', {
     data: json,
     title: 'Latest | PreserveTube',
   }))
@@ -56,7 +57,7 @@ app.get('/sitemap-index.xml', async ({ set }) => {
   return sitemapIndexXML
 })
 
-app.get('/sitemap-:index.xml', async ({ set, params: { index }, error, path }) => { 
+app.get('/sitemap-:index.xml', async ({ set, params: { index }, error, path }) => {
   const indexNum = path.replace('/sitemap-', '').replace('.xml', '')
   const cachedSitemap = await redis.get(`sitemap-${indexNum}`);
   if (cachedSitemap) {
