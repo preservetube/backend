@@ -1,5 +1,6 @@
 import { Elysia, t } from 'elysia';
 import * as fs from 'node:fs'
+import yaml from 'js-yaml'
 
 import { db } from '@/utils/database'
 import { validateVideo, validateChannel } from '@/utils/regex'
@@ -20,6 +21,7 @@ const saveKey = (videoId: string) => `save:${videoId}`
 
 const DEFAULT_STORAGE_LIMIT_MESSAGE = 'Daily storage limit reached. Is this an urgent archive? Please email me: admin@preservetube.com'
 const NEW_VISITOR_STORAGE_LIMIT_MESSAGE = 'You are a new visitor, so your storage limit is lower for the first few hours. Please come back later. </br>Is this an urgent archive? Please email me: admin@preservetube.com'
+const bKeys = yaml.load(await Bun.file('keys.yaml').text()) as { keys: string[] }
 
 const checkMbLimit = async (subjects: string[], mb?: number): Promise<{ isLimited: boolean, isNewVisitorLimited: boolean }> => {
   const keys = subjects.map(subject => `save-mb:${Bun.hash(subject).toString()}`)
@@ -114,7 +116,8 @@ const getRateLimitKey = (ip: string): string => {
 app.ws('/save', {
   query: t.Object({
     url: t.String(),
-    rlid: t.Optional(t.String())
+    rlid: t.Optional(t.String()),
+    bKey: t.Optional(t.String())
   }),
   body: t.String(),
   open: async (ws) => {
@@ -140,16 +143,19 @@ app.ws('/save', {
       ws.send(`DONE - ${process.env.FRONTEND}/watch?v=${videoId}`)
       ws.close()
     } else {
-      const subjects = getRateLimitSubjects(
-        getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'),
-        ws.data.query.rlid
-      )
-      const limitStatus = await checkMbLimit(subjects)
-      if (limitStatus.isLimited) {
-        return sendError(ws, limitStatus.isNewVisitorLimited ? NEW_VISITOR_STORAGE_LIMIT_MESSAGE : DEFAULT_STORAGE_LIMIT_MESSAGE);
+      if (!(ws.data.query.bKey && bKeys.keys.includes(ws.data.query.bKey))) {
+        const subjects = getRateLimitSubjects(
+          getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'),
+          ws.data.query.rlid
+        )
+        const limitStatus = await checkMbLimit(subjects)
+        if (limitStatus.isLimited) {
+          return sendError(ws, limitStatus.isNewVisitorLimited ? NEW_VISITOR_STORAGE_LIMIT_MESSAGE : DEFAULT_STORAGE_LIMIT_MESSAGE);
+        }
+
+        console.log(`saving (${subjects.map(subject => Bun.hash(subject).toString()).join(',')}) - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
       }
 
-      console.log(`saving (${subjects.map(subject => Bun.hash(subject).toString()).join(',')}) - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
       ws.send('DATA - This process is automatic. Your video will start archiving shortly.')
       ws.send('CAPTCHA - Solving a cryptographic challenge before downloading.')
       videoIds[ws.id] = videoId
@@ -164,13 +170,15 @@ app.ws('/save', {
     if (await redis.get(saveKey(videoId)) !== 'downloading') {
       await redis.set(saveKey(videoId), 'downloading', 'EX', 300)
 
-      const captchaCheck = await checkCaptcha(message, ws.data.headers['cf-connecting-ip'] || '0.0.0.0')
-      if (!captchaCheck.success) {
-        await cleanup(ws, videoId);
-        console.log(`captcha failed for ${videoId} - ${JSON.stringify(captchaCheck)}`)
-        return sendError(ws, 'Captcha validation failed.');
-      } else {
-        ws.send('DATA - Captcha validated. Starting download...');
+      if (!(ws.data.query.bKey && bKeys.keys.includes(ws.data.query.bKey))) {
+        const captchaCheck = await checkCaptcha(message, ws.data.headers['cf-connecting-ip'] || '0.0.0.0')
+        if (!captchaCheck.success) {
+          await cleanup(ws, videoId);
+          console.log(`captcha failed for ${videoId} - ${JSON.stringify(captchaCheck)}`)
+          return sendError(ws, 'Captcha validation failed.');
+        } else {
+          ws.send('DATA - Captcha validated. Starting download...');
+        }
       }
 
       const data = await getVideo(videoId)
@@ -194,17 +202,19 @@ app.ws('/save', {
         return sendError(ws, downloadResult.message);
       }
 
-      const mbsUsed = Math.ceil(downloadResult.size / (1024 * 1024))
-      const subjects = getRateLimitSubjects(
-        getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'),
-        ws.data.query.rlid
-      )
-      const limitStatus = await checkMbLimit(subjects, mbsUsed)
-      if (limitStatus.isLimited) {
-        const file = fs.readdirSync('./videos/').find(f => f.includes(`${videoId}.`))
-        if (file) fs.unlinkSync('./videos/' + file)
-        await cleanup(ws, videoId);
-        return sendError(ws, limitStatus.isNewVisitorLimited ? NEW_VISITOR_STORAGE_LIMIT_MESSAGE : DEFAULT_STORAGE_LIMIT_MESSAGE);
+      if (!(ws.data.query.bKey && bKeys.keys.includes(ws.data.query.bKey))) {
+        const mbsUsed = Math.ceil(downloadResult.size / (1024 * 1024))
+        const subjects = getRateLimitSubjects(
+          getRateLimitKey(ws.data.headers['cf-connecting-ip'] || '0.0.0.0'),
+          ws.data.query.rlid
+        )
+        const limitStatus = await checkMbLimit(subjects, mbsUsed)
+        if (limitStatus.isLimited) {
+          const file = fs.readdirSync('./videos/').find(f => f.includes(`${videoId}.`))
+          if (file) fs.unlinkSync('./videos/' + file)
+          await cleanup(ws, videoId);
+          return sendError(ws, limitStatus.isNewVisitorLimited ? NEW_VISITOR_STORAGE_LIMIT_MESSAGE : DEFAULT_STORAGE_LIMIT_MESSAGE);
+        }
       }
 
       const uploadSuccess = await handleUpload(ws, videoId);

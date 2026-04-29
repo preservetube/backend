@@ -11,6 +11,7 @@ services:
       - /mnt/hdd/preservetube-videos:/usr/src/preservetube/backend/videos
       - ./.env:/usr/src/preservetube/backend/.env
       - ./s3.json:/usr/src/preservetube/backend/s3.json
+      - ./keys.yaml:/usr/src/preservetube/backend/keys.yaml
 
 networks:
   public:
