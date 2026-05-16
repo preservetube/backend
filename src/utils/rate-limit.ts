@@ -2,8 +2,8 @@ import redis from '@/utils/redis'
 
 const RATE_LIMIT_COOKIE = 'pt_rlid'
 const RATE_LIMIT_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
-const DEFAULT_MB_LIMIT = 250
-const SUBNET_MB_LIMIT = DEFAULT_MB_LIMIT * 3
+const DEFAULT_MB_LIMIT = 550
+const SUBNET_MB_LIMIT = DEFAULT_MB_LIMIT * 1.5
 const NEW_IP_MB_LIMIT = 150
 const NEW_IP_TRUST_WINDOW_MS = 6 * 60 * 60 * 1000 // 6h
 
