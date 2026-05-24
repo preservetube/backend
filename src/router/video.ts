@@ -190,7 +190,7 @@ app.get('/channel/:id', async ({ params: { id }, set }) => {
   const processedVideos: processedVideo[] = videos.map((video: any) => ({ // it would be impossible to set types for youtube output... they change it every day.
     id: video.videoId,
     title: video.title,
-    thumbnail: video.thumbnails?.[0]?.url || video.videoThumbnails?.[0]?.url || '',
+    thumbnail: video.videoThumbnails?.at(-1)?.url || '',
     published: video.published
       ? new Date(video.published).toISOString().slice(0, 10)
       : video.publishedText || ''
@@ -208,12 +208,12 @@ app.get('/channel/:id', async ({ params: { id }, set }) => {
   processedVideos.sort((a: any, b: any) => new Date(b.published).getTime() - new Date(a.published).getTime());
 
   const html = await m(eta.render('./channel', {
-    name: channel.metadata.title,
-    avatar: channel.metadata.avatar[0].url,
-    verified: channel.header.author?.is_verified,
+    name: channel.author,
+    avatar: channel.authorThumbnails[0].url,
+    verified: channel.authorVerified,
     videos: processedVideos,
-    title: `${channel.metadata.title} | PreserveTube`,
-    keywords: `${channel.metadata.title} archive, ${channel.metadata.title} channel archive, ${channel.metadata.title} deleted video, ${channel.metadata.title} video deleted`
+    title: `${channel.author} | PreserveTube`,
+    keywords: `${channel.author} archive, ${channel.author} channel archive, ${channel.author} deleted video, ${channel.author} video deleted`
   }))
   await redis.set(`channel:${id}:html`, html, 'EX', 3600)
 
