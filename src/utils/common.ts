@@ -59,7 +59,7 @@ async function createDatabaseVideo(id: string, videoUrl: string) {
   if (data.error) return data
   if (channelData.error) return channelData
 
-  const uploaderAvatar = await uploadImage(data.videoDetails.channelId, channelData.metadata.thumbnail[0].url)
+  const uploaderAvatar = await uploadImage(data.videoDetails.channelId, channelData.authorThumbnails[0].url)
   const thumbnailUrl = await uploadImage(id, data.microformat.playerMicroformatRenderer.thumbnail.thumbnails[0].url)
 
   await db.insertInto('videos')
@@ -72,9 +72,9 @@ async function createDatabaseVideo(id: string, videoUrl: string) {
       source: videoUrl,
       published: data.microformat.playerMicroformatRenderer.publishDate.slice(0, 10),
       archived: (new Date()).toISOString().slice(0, 10),
-      channel: channelData.metadata.title,
-      channelId: channelData.metadata.external_id,
-      channelVerified: channelData.header.author?.is_verified || false,
+      channel: channelData.author,
+      channelId: channelData.authorId,
+      channelVerified: channelData.authorVerified || false,
       channelAvatar: uploaderAvatar,
       disabled: false,
       hasBeenReported: false

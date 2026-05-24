@@ -3,7 +3,6 @@ import DOMPurify from 'isomorphic-dompurify'
 
 import { db } from '@/utils/database'
 import { getChannel, getChannelVideos } from '@/utils/metadata';
-import { convertRelativeToDate } from '@/utils/common';
 import { m, eta, error } from '@/utils/html'
 import redis from '@/utils/redis';
 
@@ -189,10 +188,12 @@ app.get('/channel/:id', async ({ params: { id }, set }) => {
     .execute()
 
   const processedVideos: processedVideo[] = videos.map((video: any) => ({ // it would be impossible to set types for youtube output... they change it every day.
-    id: video.video_id,
-    title: video.title.text,
-    thumbnail: video.thumbnails[0].url,
-    published: video.upcoming?.slice(0, 10) || (video.published.text.endsWith('ago') ? convertRelativeToDate(video.published.text) : new Date(video.published.text)).toISOString().slice(0, 10)
+    id: video.videoId,
+    title: video.title,
+    thumbnail: video.thumbnails?.[0]?.url || video.videoThumbnails?.[0]?.url || '',
+    published: video.published
+      ? new Date(video.published).toISOString().slice(0, 10)
+      : video.publishedText || ''
   }))
 
   archived.forEach(v => {

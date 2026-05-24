@@ -280,11 +280,11 @@ app.ws('/savechannel', {
     }
 
     for (const video of videos.slice(0, 5)) {
-      if (!video || (await redis.get(saveKey(video.video_id))) || (await redis.get(`blacklist:${video.video_id}`))) continue;
+      if (!video || (await redis.get(saveKey(video.videoId))) || (await redis.get(`blacklist:${video.videoId}`))) continue;
 
       const already = await db.selectFrom('videos')
         .select('id')
-        .where('id', '=', video.video_id)
+        .where('id', '=', video.videoId)
         .executeTakeFirst()
       if (already) continue
 
@@ -298,10 +298,10 @@ app.ws('/savechannel', {
         break;
       }
 
-      console.log(`saving (${subjects.map(subject => Bun.hash(subject).toString()).join(',')}) - ${ws.data.path} - ${video.video_id}`)
+      console.log(`saving (${subjects.map(subject => Bun.hash(subject).toString()).join(',')}) - ${ws.data.path} - ${video.videoId}`)
 
-      const isSlop = await parseSlop(video.video_id, video.title.text,
-        video.description_snippet?.text || '', channelId)
+      const isSlop = await parseSlop(video.videoId, video.title,
+        video.description || video.description_snippet?.text || '', channelId)
 
       if (isSlop) {
         sendError(ws, 'Filters can always be wrong. Is the rating wrong? Email me at admin@preservetube.com<br>', false);
@@ -310,24 +310,24 @@ app.ws('/savechannel', {
         continue;
       }
 
-      ws.send(`DATA - Processing video: ${video.title.text}`);
-      await redis.set(saveKey(video.video_id), 'downloading', 'EX', 300);
+      ws.send(`DATA - Processing video: ${video.title}`);
+      await redis.set(saveKey(video.videoId), 'downloading', 'EX', 300);
 
-      const downloadResult = await downloadVideo(ws, video.video_id);
+      const downloadResult = await downloadVideo(ws, video.videoId);
       if (!downloadResult.fail) {
         const mbsUsed = Math.ceil(downloadResult.size / (1024 * 1024))
         const limitStatus = await checkMbLimit(subjects, mbsUsed)
         if (limitStatus.isLimited) {
-          const file = fs.readdirSync('./videos/').find(f => f.includes(`${video.video_id}.`))
+          const file = fs.readdirSync('./videos/').find(f => f.includes(`${video.videoId}.`))
           if (file) fs.unlinkSync('./videos/' + file)
           sendError(ws, limitStatus.isNewVisitorLimited ? NEW_VISITOR_STORAGE_LIMIT_MESSAGE : DEFAULT_STORAGE_LIMIT_MESSAGE, false);
           break;
         }
-        await handleUpload(ws, video.video_id, true);
+        await handleUpload(ws, video.videoId, true);
       }
 
-      await redis.del(saveKey(video.video_id));
-      ws.send(`DATA - Created video page for ${video.title.text}`)
+      await redis.del(saveKey(video.videoId));
+      ws.send(`DATA - Created video page for ${video.title}`)
     }
 
     await cleanup(ws, channelId);
