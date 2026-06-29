@@ -8,6 +8,34 @@ import redis from '@/utils/redis';
 
 const app = new Elysia()
 
+DOMPurify.addHook('afterSanitizeAttributes', function (node) {
+  if (node.tagName === 'A') {
+    const disallowedPatterns: RegExp[] = [
+      /\/playlist/i,
+      /\/hashtag\//i,
+      /\/live\//i,
+      /\/user\//i,
+      /\/shorts\//i,
+      /\/c\//i,
+      /\/@[^\/]/i
+    ];
+    const href = node.getAttribute('href') || '';
+
+    const shouldConvertToSpan = disallowedPatterns.some(pattern =>
+      pattern.test(href)
+    );
+
+    if (shouldConvertToSpan) {
+      const span = node.ownerDocument.createElement('span');
+      span.innerHTML = node.innerHTML;
+      if (node.className) span.className = node.className;
+      node.parentNode?.replaceChild(span, node);
+    } else {
+      node.setAttribute('rel', 'nofollow noopener noreferrer');
+    }
+  }
+})
+
 interface processedVideo {
   id: string;
   title: string;
@@ -73,34 +101,6 @@ app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
       .where('videoId', '=', json.id)
       .executeTakeFirst()
     : null
-
-  DOMPurify.addHook('afterSanitizeAttributes', function (node) {
-    if (node.tagName === 'A') {
-      const disallowedPatterns: RegExp[] = [
-        /\/playlist/i,
-        /\/hashtag\//i,
-        /\/live\//i,
-        /\/user\//i,
-        /\/shorts\//i,
-        /\/c\//i,
-        /\/@[^\/]/i
-      ];
-      const href = node.getAttribute('href') || '';
-
-      const shouldConvertToSpan = disallowedPatterns.some(pattern =>
-        pattern.test(href)
-      );
-
-      if (shouldConvertToSpan) {
-        const span = node.ownerDocument.createElement('span');
-        span.innerHTML = node.innerHTML;
-        if (node.className) span.className = node.className;
-        node.parentNode?.replaceChild(span, node);
-      } else {
-        node.setAttribute('rel', 'nofollow noopener noreferrer');
-      }
-    }
-  })
 
   const html = await m(eta.render('./watch', {
     transparency,
