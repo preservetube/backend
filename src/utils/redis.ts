@@ -8,19 +8,20 @@ const redis = new Redis({
 
 redis.on('ready', async function () {
   console.log('connected to redis')
-
-  setInterval(async () => {
-    const files = fs.readdirSync('videos')
-    const targetFiles = files.filter((file) => file.endsWith('.webm') || file.endsWith('.mp4') || file.endsWith('.m4a'))
-    targetFiles.forEach(async (f) => {
-      const videoId = f.includes('_') ? f.split('_')[0] : f.replace('.mp4', '')
-      const isActive = await redis.get(videoId)
-      if (!isActive) {
-        fs.unlinkSync(`./videos/${f}`)
-        console.log(`deleted file ${f} because there is no active download of it`)
-      }
-    })
-  }, 5 * 60000)
 })
+
+setInterval(async () => {
+  if (redis.status !== 'ready') return;
+  const files = fs.readdirSync('videos')
+  const targetFiles = files.filter((file) => file.endsWith('.webm') || file.endsWith('.mp4') || file.endsWith('.m4a'))
+  targetFiles.forEach(async (f) => {
+    const videoId = f.includes('_') ? f.split('_')[0] : f.replace('.mp4', '')
+    const isActive = await redis.get(videoId)
+    if (!isActive) {
+      fs.unlinkSync(`./videos/${f}`)
+      console.log(`deleted file ${f} because there is no active download of it`)
+    }
+  })
+}, 5 * 60000)
 
 export default redis

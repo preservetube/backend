@@ -1,4 +1,4 @@
-import { readdir } from 'node:fs/promises'
+import { readdir, stat } from 'node:fs/promises'
 import * as path from 'node:path'
 
 export interface BlockedIpResult {
@@ -61,6 +61,35 @@ let networksCache: NetworkAsnRecord[] | null = null
 let networkRefreshPromise: Promise<void> | null = null
 let networksCheckedAt = 0
 let networksEtag: string | null = null
+
+interface BlockedListCache {
+  mtimeMs: number;
+  parsedCidrs: { cidr: string, parsed: ParsedCidr }[];
+}
+const blockedCache = new Map<string, BlockedListCache>();
+
+async function getBlockedCidrs(fileName: string, filePath: string) {
+  const fileStat = await stat(filePath).catch(() => null);
+  if (!fileStat) return [];
+
+  const cached = blockedCache.get(fileName);
+  if (cached && cached.mtimeMs === fileStat.mtimeMs) {
+    return cached.parsedCidrs;
+  }
+
+  const content = await Bun.file(filePath).text();
+  const cidrs = extractCidrs(content);
+  const parsedCidrs = [];
+  for (const cidr of cidrs) {
+    const parsed = parseCidr(cidr);
+    if (parsed) {
+      parsedCidrs.push({ cidr, parsed });
+    }
+  }
+  
+  blockedCache.set(fileName, { mtimeMs: fileStat.mtimeMs, parsedCidrs });
+  return parsedCidrs;
+}
 
 function ipv4ToInt(ip: string): number | null {
   const parts = ip.trim().split('.')
@@ -326,11 +355,19 @@ export async function checkIpRanges(ip: string): Promise<BlockedIpResult> {
 
   for (const fileName of files) {
     const filePath = path.join(BLOCKED_DIR, fileName)
-    const content = await Bun.file(filePath).text()
-    const cidrs = extractCidrs(content)
+    const cachedCidrs = await getBlockedCidrs(fileName, filePath)
 
-    for (const cidr of cidrs) {
-      if (isIpInCidr(parsedIp, cidr)) {
+    for (const item of cachedCidrs) {
+      const { cidr, parsed } = item;
+      let matched = false;
+      
+      if (parsedIp.version === 4 && parsed.version === 4) {
+        matched = (parsedIp.value & parsed.mask) === parsed.network
+      } else if (parsedIp.version === 6 && parsed.version === 6) {
+        matched = (parsedIp.value & parsed.mask) === parsed.network
+      }
+
+      if (matched) {
         return {
           blocked: path.basename(fileName, '.txt') != 'cloudflare',
           list: path.basename(fileName, '.txt'),
