@@ -2,9 +2,12 @@ import * as fs from 'node:fs'
 const keys = JSON.parse(fs.readFileSync('s3.json', 'utf-8'))
 
 async function uploadVideo(video: string) {
-  const fileBuffer = await Bun.file(video).arrayBuffer()
+  const file = Bun.file(video)
+  const stream = fs.createReadStream(video)
   const hasher = new Bun.CryptoHasher("sha256");
-  hasher.update(fileBuffer);
+  for await (const chunk of stream) {
+    hasher.update(chunk);
+  }
   const fileHash = hasher.digest("hex");
 
   const uploaded = await fetch(`${keys.endpoint}/preservetube/${video.split('/')[2]}`, {
@@ -13,7 +16,7 @@ async function uploadVideo(video: string) {
       'x-authtoken': keys.videos[0].secret,
       'x-file-hash': fileHash
     },
-    body: fileBuffer
+    body: file
   })
   if (!uploaded.ok) throw new Error(`failed to upload video - ${uploaded.status} (${uploaded.statusText}) ${await uploaded.text()}`)
   return uploaded.url.replace(keys.endpoint, 'https://s5.archive.party')

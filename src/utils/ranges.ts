@@ -51,16 +51,35 @@ interface AsnMatch {
   range: string | null
 }
 
-interface NetworkAsnRecord {
-  asn: number
-  cidr: string
-  parsed: ParsedCidr
+class NetworksDb {
+  ipv4Network: Uint32Array
+  ipv4Prefix: Uint8Array
+  ipv4Asn: Uint32Array
+  ipv4Count: number
+
+  ipv6Network: bigint[]
+  ipv6Prefix: Uint8Array
+  ipv6Asn: Uint32Array
+  ipv6Count: number
+
+  constructor(maxSize: number) {
+    this.ipv4Network = new Uint32Array(maxSize)
+    this.ipv4Prefix = new Uint8Array(maxSize)
+    this.ipv4Asn = new Uint32Array(maxSize)
+    this.ipv4Count = 0
+
+    this.ipv6Network = new Array(maxSize)
+    this.ipv6Prefix = new Uint8Array(maxSize)
+    this.ipv6Asn = new Uint32Array(maxSize)
+    this.ipv6Count = 0
+  }
 }
 
-let networksCache: NetworkAsnRecord[] | null = null
+let networksDb: NetworksDb | null = null
 let networkRefreshPromise: Promise<void> | null = null
 let networksCheckedAt = 0
 let networksEtag: string | null = null
+
 
 interface BlockedListCache {
   mtimeMs: number;
@@ -178,7 +197,7 @@ function parseCidr(cidr: string): ParsedCidr | null {
   if (ip.version === 4) {
     if (prefix < 0 || prefix > 32) return null
     const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0
-    return { version: 4, network: ip.value & mask, mask, prefix }
+    return { version: 4, network: (ip.value & mask) >>> 0, mask, prefix }
   }
 
   if (prefix < 0 || prefix > 128) return null
@@ -195,7 +214,7 @@ function isIpInCidr(ip: ParsedIp, cidr: string): boolean {
   if (!parsed) return false
 
   if (ip.version === 4 && parsed.version === 4) {
-    return (ip.value & parsed.mask) === parsed.network
+    return ((ip.value & parsed.mask) >>> 0) === parsed.network
   }
 
   if (ip.version === 6 && parsed.version === 6) {
@@ -223,8 +242,13 @@ function extractCidrs(text: string): string[] {
   return cidrs
 }
 
-function parseCsvNetworks(text: string): NetworkAsnRecord[] {
-  const records: NetworkAsnRecord[] = []
+function parseCsvNetworks(text: string): NetworksDb {
+  let lineCount = 1
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '\n') lineCount++
+  }
+
+  const db = new NetworksDb(lineCount)
   const lines = text.split(/\r?\n/)
 
   for (const line of lines) {
@@ -241,14 +265,21 @@ function parseCsvNetworks(text: string): NetworkAsnRecord[] {
     const parsed = parseCidr(cidr)
     if (!parsed) continue
 
-    records.push({
-      asn: Number(asnText),
-      cidr,
-      parsed
-    })
+    const asn = Number(asnText)
+    if (parsed.version === 4) {
+      const idx = db.ipv4Count++
+      db.ipv4Network[idx] = parsed.network
+      db.ipv4Prefix[idx] = parsed.prefix
+      db.ipv4Asn[idx] = asn
+    } else {
+      const idx = db.ipv6Count++
+      db.ipv6Network[idx] = parsed.network
+      db.ipv6Prefix[idx] = parsed.prefix
+      db.ipv6Asn[idx] = asn
+    }
   }
 
-  return records
+  return db
 }
 
 async function refreshNetworksCache(force: boolean = false): Promise<void> {
@@ -256,7 +287,7 @@ async function refreshNetworksCache(force: boolean = false): Promise<void> {
 
   networkRefreshPromise = (async () => {
     const isFresh =
-      networksCache !== null &&
+      networksDb !== null &&
       networksCheckedAt > 0 &&
       Date.now() - networksCheckedAt < NETWORKS_REFRESH_INTERVAL_MS
 
@@ -275,7 +306,7 @@ async function refreshNetworksCache(force: boolean = false): Promise<void> {
 
       const remoteEtag = headResponse.headers.get('etag')
       const shouldDownload =
-        networksCache === null || !remoteEtag || !networksEtag || remoteEtag !== networksEtag
+        networksDb === null || !remoteEtag || !networksEtag || remoteEtag !== networksEtag
 
       if (shouldDownload) {
         const downloadResponse = await fetch('https://ip.guide/bulk/networks.csv', {
@@ -284,15 +315,14 @@ async function refreshNetworksCache(force: boolean = false): Promise<void> {
         if (!downloadResponse.ok) {
           throw new Error(`failed to fetch ip.guide with ${downloadResponse.status}`)
         }
-
         const content = await downloadResponse.text()
-        networksCache = parseCsvNetworks(content)
+        networksDb = parseCsvNetworks(content)
       }
 
       networksCheckedAt = Date.now()
       networksEtag = remoteEtag ?? networksEtag
     } catch (error) {
-      if (networksCache === null) networksCache = []
+      if (networksDb === null) networksDb = new NetworksDb(0)
 
       console.error('Failed to refresh ASN network ranges', error)
     }
@@ -303,40 +333,62 @@ async function refreshNetworksCache(force: boolean = false): Promise<void> {
   return networkRefreshPromise
 }
 
+function intToIpv4(ip: number): string {
+  return `${(ip >>> 24) & 255}.${(ip >>> 16) & 255}.${(ip >>> 8) & 255}.${ip & 255}`
+}
+
+function bigintToIpv6(ip: bigint): string {
+  const parts: string[] = []
+  for (let i = 7n; i >= 0n; i--) {
+    parts.push(((ip >> (i * 16n)) & 0xffffn).toString(16))
+  }
+  return parts.join(':')
+}
+
 async function resolveIpAsn(parsedIp: ParsedIp): Promise<AsnMatch> {
   await refreshNetworksCache()
-  const records = networksCache ?? []
-  let bestMatch: NetworkAsnRecord | null = null
+  const db = networksDb
 
-  for (const record of records) {
-    if (parsedIp.version === 4 && record.parsed.version === 4) {
-      if ((parsedIp.value & record.parsed.mask) === record.parsed.network) {
-        if (bestMatch == null || record.parsed.prefix > bestMatch.parsed.prefix) {
-          bestMatch = record
+  let bestAsn: number | null = null
+  let bestPrefix = -1
+  let bestNetwork: number | bigint | null = null
+
+  if (db && parsedIp.version === 4) {
+    const value = parsedIp.value
+    for (let i = 0; i < db.ipv4Count; i++) {
+      const prefix = db.ipv4Prefix[i]
+      if (prefix > bestPrefix) {
+        const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0
+        if (((value & mask) >>> 0) === db.ipv4Network[i]) {
+          bestPrefix = prefix
+          bestAsn = db.ipv4Asn[i]
+          bestNetwork = db.ipv4Network[i]
         }
       }
     }
-
-    if (parsedIp.version === 6 && record.parsed.version === 6) {
-      if ((parsedIp.value & record.parsed.mask) === record.parsed.network) {
-        if (bestMatch == null || record.parsed.prefix > bestMatch.parsed.prefix) {
-          bestMatch = record
+  } else if (db && parsedIp.version === 6) {
+    const value = parsedIp.value
+    for (let i = 0; i < db.ipv6Count; i++) {
+      const prefix = db.ipv6Prefix[i]
+      if (prefix > bestPrefix) {
+        const mask = prefix === 0 ? 0n : (IPV6_FULL_MASK ^ ((1n << (IPV6_BITS - BigInt(prefix))) - 1n)) & IPV6_FULL_MASK
+        if ((value & mask) === db.ipv6Network[i]) {
+          bestPrefix = prefix
+          bestAsn = db.ipv6Asn[i]
+          bestNetwork = db.ipv6Network[i]
         }
       }
     }
   }
 
-  if (bestMatch) {
-    return {
-      asn: bestMatch.asn,
-      range: bestMatch.cidr
-    }
+  if (bestAsn !== null) {
+    const range = parsedIp.version === 4
+      ? `${intToIpv4(bestNetwork as number)}/${bestPrefix}`
+      : `${bigintToIpv6(bestNetwork as bigint)}/${bestPrefix}`
+    return { asn: bestAsn, range }
   }
 
-  return {
-    asn: null,
-    range: null
-  }
+  return { asn: null, range: null }
 }
 
 export async function checkIpRanges(ip: string): Promise<BlockedIpResult> {
@@ -362,7 +414,7 @@ export async function checkIpRanges(ip: string): Promise<BlockedIpResult> {
       let matched = false;
       
       if (parsedIp.version === 4 && parsed.version === 4) {
-        matched = (parsedIp.value & parsed.mask) === parsed.network
+        matched = ((parsedIp.value & parsed.mask) >>> 0) === parsed.network
       } else if (parsedIp.version === 6 && parsed.version === 6) {
         matched = (parsedIp.value & parsed.mask) === parsed.network
       }

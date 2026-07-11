@@ -16,7 +16,7 @@ setInterval(async () => {
   const targetFiles = files.filter((file) => file.endsWith('.webm') || file.endsWith('.mp4') || file.endsWith('.m4a'))
   targetFiles.forEach(async (f) => {
     const videoId = f.includes('_') ? f.split('_')[0] : f.replace('.mp4', '')
-    const isActive = await redis.get(videoId)
+    const isActive = await redis.get(`save:${videoId}`)
     if (!isActive) {
       fs.unlinkSync(`./videos/${f}`)
       console.log(`deleted file ${f} because there is no active download of it`)
