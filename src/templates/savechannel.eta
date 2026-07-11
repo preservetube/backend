@@ -65,11 +65,17 @@
     h1.innerHTML = text
   }
 
+  let keepAliveInterval
   ws.onclose = function (event) {
+    clearInterval(keepAliveInterval)
     h3.innerHTML = `Websocket connection was closed: ${event.reason} (${event.code})<br>${h3.innerHTML}`
   } 
 
-  setInterval(() => {
+  keepAliveInterval = setInterval(() => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      return
+    }
+
     ws.send('alive')
   }, 2000)
 </script>

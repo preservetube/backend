@@ -47,6 +47,7 @@
   const sitekey = "<%= it.sitekey %>"
   const initialRateLimitId = "<%= it.rateLimitId %>"
   let ws = null
+  let keepAliveInterval = null
   const h1 = document.getElementById("title")
   const h3 = document.getElementById("bottom")
   const captcha = document.getElementById("captcha")
@@ -110,6 +111,9 @@
     }
 
     ws.onclose = function (event) {
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval)
+      }
       h3.innerHTML = `Websocket connection was closed: ${event.reason} (${event.code})<br>${h3.innerHTML}`
     }
   }
@@ -162,7 +166,7 @@
     })
   }
 
-  setInterval(() => {
+  keepAliveInterval = setInterval(() => {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       return
     }
