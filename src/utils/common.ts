@@ -1,4 +1,3 @@
-import { getVideo, getChannel } from "@/utils/metadata";
 import { uploadImage } from "@/utils/upload";
 import { db } from '@/utils/database'
 import crypto from 'node:crypto';
@@ -52,9 +51,8 @@ async function checkCaptcha(response: string, remoteIp: string): Promise<any> {
   return confirm
 }
 
-async function createDatabaseVideo(id: string, videoUrl: string) {
-  const data = await getVideo(id)
-  const channelData = await getChannel(data.videoDetails.channelId)
+async function createDatabaseVideo(id: string, videoUrl: string, metadata: { data: any, channelData: any }) {
+  const { data, channelData } = metadata
 
   if (data.error) return data
   if (channelData.error) return channelData

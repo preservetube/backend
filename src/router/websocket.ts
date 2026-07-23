@@ -7,7 +7,7 @@ import { validateVideo, validateChannel } from '@/utils/regex'
 import { checkCaptcha, createDatabaseVideo } from '@/utils/common';
 import { downloadVideo } from '@/utils/download';
 import { uploadVideo } from '@/utils/upload';
-import { getChannelVideos, getVideo } from '@/utils/metadata';
+import { getChannel, getChannelVideos, getVideo } from '@/utils/metadata';
 import { error } from '@/utils/html'
 import redis from '@/utils/redis';
 import { parseSlop } from '@/utils/slop';
@@ -68,7 +68,7 @@ const cleanup = async (ws: any, videoId: string) => {
   await redis.del(ws.id);
 };
 
-const handleUpload = async (ws: any, videoId: string, isChannel: boolean = false) => {
+const handleUpload = async (ws: any, videoId: string, metadata: { data: any, channelData: any }, isChannel: boolean = false) => {
   // the pattern of files that have finished downloading is [videoid].mp4, but some extensions are also possible due to
   // current youtube changes, so we need to make sure the other extensions are also covered
   let filePath = fs.readdirSync('./videos/').find(f => f.includes(`${videoId}.`))
@@ -84,7 +84,7 @@ const handleUpload = async (ws: any, videoId: string, isChannel: boolean = false
     const videoUrl = await uploadVideo(filePath);
     fs.unlinkSync(filePath);
 
-    const uploaded = await createDatabaseVideo(videoId, videoUrl);
+    const uploaded = await createDatabaseVideo(videoId, videoUrl, metadata);
     if (uploaded !== 'success') {
       ws.send(`DATA - Error while uploading - ${JSON.stringify(uploaded)}`);
       return false;
@@ -185,6 +185,10 @@ app.ws('/save', {
       if (data.error) {
         return sendError(ws, 'Unable to retrieve video info from YouTube. Please try again later.')
       }
+      const channelData = await getChannel(data.videoDetails.channelId)
+      if (channelData.error) {
+        return sendError(ws, 'Unable to retrieve video info from YouTube. Please try again later.')
+      }
 
       const isSlop = await parseSlop(videoId, data.videoDetails.title,
         (data.microformat.playerMicroformatRenderer.description?.simpleText || '').replaceAll('\n', '<br>'),
@@ -217,7 +221,7 @@ app.ws('/save', {
         }
       }
 
-      const uploadSuccess = await handleUpload(ws, videoId);
+      const uploadSuccess = await handleUpload(ws, videoId, { data, channelData });
       if (!uploadSuccess) await redis.del(saveKey(videoId));
 
       await cleanup(ws, videoId);
@@ -273,8 +277,8 @@ app.ws('/savechannel', {
     }
 
     videoIds[ws.id] = `downloading-${channelId}`;
-    const videos = await getChannelVideos(channelId);
-    if (!Array.isArray(videos)) {
+    const [videos, channelData] = await Promise.all([getChannelVideos(channelId), getChannel(channelId)]);
+    if (!Array.isArray(videos) || channelData.error) {
       await cleanup(ws, channelId);
       return sendError(ws, 'Unable to retrieve channel videos from YouTube. Please try again later.');
     }
@@ -299,6 +303,11 @@ app.ws('/savechannel', {
       }
 
       console.log(`saving (${subjects.map(subject => Bun.hash(subject).toString()).join(',')}) - ${ws.data.path} - ${video.videoId}`)
+      const data = await getVideo(video.videoId)
+      if (data.error) {
+        ws.send(`DATA - Unable to retrieve video info for ${video.videoId}. Skipping.`)
+        continue
+      }
 
       const isSlop = await parseSlop(video.videoId, video.title,
         video.description || video.description_snippet?.text || '', channelId)
@@ -323,11 +332,12 @@ app.ws('/savechannel', {
           sendError(ws, limitStatus.isNewVisitorLimited ? NEW_VISITOR_STORAGE_LIMIT_MESSAGE : DEFAULT_STORAGE_LIMIT_MESSAGE, false);
           break;
         }
-        await handleUpload(ws, video.videoId, true);
+        const uploadSuccess = await handleUpload(ws, video.videoId, { data, channelData }, true);
+        if (uploadSuccess) ws.send(`DATA - Created video page for ${video.title}`)
       }
 
       await redis.del(saveKey(video.videoId));
-      ws.send(`DATA - Created video page for ${video.title}`)
+      if (downloadResult.fail) continue
     }
 
     await cleanup(ws, channelId);
