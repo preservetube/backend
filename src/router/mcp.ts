@@ -83,7 +83,7 @@ function createMcpServer() {
 }
 
 async function handleMcpStreamRequest(request: Request): Promise<Response> {
-  const transport = new WebStandardStreamableHTTPServerTransport()
+  const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true })
   const mcpServer = createMcpServer()
   await mcpServer.connect(transport)
   return await transport.handleRequest(request)
