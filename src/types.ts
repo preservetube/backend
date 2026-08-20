@@ -40,6 +40,7 @@ export interface ReportsTable {
   title: string
   details: string
   date: Date
+  pdf_url?: string | null
 }
 
 export type Report = Selectable<ReportsTable>

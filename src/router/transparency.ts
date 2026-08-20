@@ -46,6 +46,7 @@ app.get('/transparency/:id', async ({ params: { id }, set, error }) => {
     t_title: json.title,
     date: json.date.toISOString(),
     details: json.details,
+    pdf_url: json.pdf_url,
   }))
   await redis.set(`transparency:${id}:html`, html, 'EX', 3600)
 
