@@ -5,7 +5,8 @@
   "license": "AGPL-3.0",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "mcp": "bun run src/mcp.ts"
   },
   "devDependencies": {
     "@types/bun": "^1.3.1"
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "@elysiajs/static": "^1.4.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@types/crypto-js": "^4.2.2",
     "@types/html-minifier-next": "^2.1.0",
     "@types/js-yaml": "^4.0.9",

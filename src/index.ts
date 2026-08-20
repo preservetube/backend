@@ -7,6 +7,7 @@ import transparency from '@/router/transparency'
 import video from '@/router/video'
 import websocket from '@/router/websocket'
 import html from '@/router/html'
+import mcp from '@/router/mcp'
 
 const app = new Elysia()
 app.use(latest)
@@ -15,8 +16,9 @@ app.use(transparency)
 app.use(video)
 app.use(websocket)
 app.use(html)
-app.onRequest(({ set, url }: any) => {
-  set.headers['Onion-Location'] = 'http://tubey5btlzxkcjpxpj2c7irrbhvgu3noouobndafuhbw4i5ndvn4v7qd.onion/' + url.split('/').at(-1)
+app.use(mcp)
+app.onRequest(({ set, request }: { set: { headers: Record<string, string> }, request: Request }) => {
+  set.headers['Onion-Location'] = 'http://tubey5btlzxkcjpxpj2c7irrbhvgu3noouobndafuhbw4i5ndvn4v7qd.onion/' + request.url.split('/').at(-1)
 })
 
 process.on('uncaughtException', err => {

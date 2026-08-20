@@ -22,6 +22,6 @@ setInterval(async () => {
       console.log(`deleted file ${f} because there is no active download of it`)
     }
   })
-}, 5 * 60000)
+}, 5 * 60000).unref()
 
 export default redis
