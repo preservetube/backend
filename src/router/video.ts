@@ -1,4 +1,5 @@
 import { Elysia } from 'elysia';
+import { sql } from 'kysely'
 import DOMPurify from 'isomorphic-dompurify'
 
 import { db } from '@/utils/database'
@@ -91,7 +92,7 @@ app.get('/watch', async ({ query: { v }, set, redirect, error }) => {
   if (json.hasBeenReported) {
     transparency = await db.selectFrom('reports')
       .selectAll()
-      .where('target', '=', json.id)
+      .where(sql<boolean>`${json.id} = ANY(target)`)
       .execute()
   }
 
