@@ -2,7 +2,7 @@
 
 <div class="grid">
   <% it.data.forEach(function(r){ %>
-    <a class="title" href="/transparency/<%= r.target %>"><%= r.title %></a>
+    <a class="title" href="/transparency/<%= r.target[0] %>"><%= r.title %></a>
   <% }) %>
 </div>
 

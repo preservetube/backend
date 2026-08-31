@@ -1,4 +1,5 @@
 import { Elysia } from 'elysia';
+import { sql } from 'kysely'
 
 import { db } from '@/utils/database'
 import { m, eta, error } from '@/utils/html'
@@ -15,6 +16,10 @@ app.get('/transparency', async ({ set }) => {
 
   const reports = await db.selectFrom('reports')
     .selectAll()
+    .where((eb) => eb.or([
+      eb('hidden', 'is', null),
+      eb('hidden', '=', false)
+    ]))
     .orderBy('date desc')
     .execute()
 
@@ -37,7 +42,7 @@ app.get('/transparency/:id', async ({ params: { id }, set, error }) => {
 
   const json = await db.selectFrom('reports')
     .selectAll()
-    .where('target', '=', id)
+    .where(sql<boolean>`${id} = ANY(target)`)
     .executeTakeFirst()
   if (!json) return error(404, 'Report not found.')
   

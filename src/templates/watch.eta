@@ -62,7 +62,7 @@
         <div class="reports">
           <span class="reports-title">Somebody has complained about this video...</span> <br/>
           <% it.transparency.forEach(function(t){ %>
-            <a href="/transparency/<%= t.target %>"><%= t.title %></a>
+            <a href="/transparency/<%= it.id %>"><%= t.title %></a>
           <% }) %>
         </div>
       <% } %>

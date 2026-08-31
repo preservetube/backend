@@ -36,11 +36,12 @@ export type UpdateVideo = Updateable<VideosTable>
 
 export interface ReportsTable {
   uuid: Generated<string>
-  target: string
+  target: string[]
   title: string
   details: string
   date: Date
   pdf_url?: string | null
+  hidden?: boolean
 }
 
 export type Report = Selectable<ReportsTable>
