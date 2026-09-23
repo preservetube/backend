@@ -9,6 +9,7 @@ export interface Database {
   videos: VideosTable
   reports: ReportsTable
   files: FilesTable
+  restore_requests: RestoreRequestsTable
 }
 
 export interface VideosTable {
@@ -64,3 +65,19 @@ export interface FilesTable {
 
 export type File = Selectable<FilesTable>
 export type NewFile = Insertable<FilesTable>
+
+export interface RestoreRequestsTable {
+  uuid: Generated<string>
+  videoId: string
+  requester_email: string
+  status: 'requested' | 'restoring' | 'restored' | 'reuploading' | 'reuploaded' | 'failed'
+  aws_restore_requested_at: Date | null
+  aws_restore_expiry: Date | null
+  error_message: string | null
+  created_at: Generated<Date>
+  updated_at: Generated<Date>
+}
+
+export type RestoreRequest = Selectable<RestoreRequestsTable>
+export type NewRestoreRequest = Insertable<RestoreRequestsTable>
+export type UpdateRestoreRequest = Updateable<RestoreRequestsTable>
