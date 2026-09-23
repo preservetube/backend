@@ -10,6 +10,8 @@ export interface Database {
   reports: ReportsTable
   files: FilesTable
   restore_requests: RestoreRequestsTable
+  archive_requests: ArchiveRequestsTable
+  auto_approve_senders: AutoApproveSendersTable
 }
 
 export interface VideosTable {
@@ -81,3 +83,42 @@ export interface RestoreRequestsTable {
 export type RestoreRequest = Selectable<RestoreRequestsTable>
 export type NewRestoreRequest = Insertable<RestoreRequestsTable>
 export type UpdateRestoreRequest = Updateable<RestoreRequestsTable>
+
+export interface ArchiveRequestVideo {
+  id: string
+  title: string | null
+  channel: string | null
+  channelId: string | null
+  lengthSeconds: number | null
+  isArchived: boolean
+  alive: boolean
+  result?: { success: boolean, message: string }
+}
+
+export interface ArchiveRequestsTable {
+  uuid: Generated<string>
+  message_id: string
+  from_email: string
+  from_name: string | null
+  subject: string | null
+  body: string | null
+  videos: ArchiveRequestVideo[]
+  ai_summary: string | null
+  status: Generated<'pending' | 'awaiting_context' | 'approved' | 'archiving' | 'solved' | 'dismissed' | 'failed'>
+  auto_approved: Generated<boolean>
+  context_message_id: string | null
+  error_message: string | null
+  reply_text: string | null
+  created_at: Generated<Date>
+  updated_at: Generated<Date>
+}
+
+export type ArchiveRequest = Selectable<ArchiveRequestsTable>
+export type NewArchiveRequest = Insertable<ArchiveRequestsTable>
+export type UpdateArchiveRequest = Updateable<ArchiveRequestsTable>
+
+export interface AutoApproveSendersTable {
+  email: string
+  note: string | null
+  created_at: Generated<Date>
+}

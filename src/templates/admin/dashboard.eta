@@ -8,6 +8,116 @@
     </form>
   </div>
 
+  <h3>Archive Requests</h3>
+  <p class="stage-desc">Requests found in the admin inbox. Approve to whitelist + archive and email the requester the links. Reject asks the requester for more context (optionally with your note) instead of refusing.</p>
+
+  <% it.archiveRequests.forEach(function(r){ %>
+    <div class="req">
+      <div class="req-head">
+        <div>
+          <strong><%= r.subject %></strong>
+          <div class="req-from"><%= r.from_name ? r.from_name + ' ' : '' %>&lt;<%= r.from_email %>&gt; &middot; <%= r.created_at ? new Date(r.created_at).toISOString().slice(0, 16).replace('T', ' ') : '' %></div>
+        </div>
+        <div>
+          <% if (r.auto_approved) { %><span class="status status--auto">auto-approved</span><% } %>
+          <span class="status status--<%= r.status %>"><%= r.status.replace('_', ' ') %></span>
+        </div>
+      </div>
+
+      <% if (r.ai_summary) { %><p class="req-summary"><span>AI:</span> <%= r.ai_summary %></p><% } %>
+
+      <table class="admin-table">
+        <thead>
+          <tr><th>Video</th><th>Title</th><th>Channel</th><th>Channel ID</th><th>Length</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% r.videos.forEach(function(v){ %>
+            <tr>
+              <td><a class="a" href="https://youtube.com/watch?v=<%= v.id %>" target="_blank" rel="noopener"><%= v.id %></a></td>
+              <td><%= v.title || '?' %></td>
+              <td><%= v.channel || '?' %></td>
+              <td><%= v.channelId || '?' %></td>
+              <td><%= it.fmtLength(v.lengthSeconds) %></td>
+              <td>
+                <% if (v.isArchived) { %><a class="a" href="/watch?v=<%= v.id %>">archived</a>
+                <% } else if (!v.alive) { %><span class="status status--failed">no metadata</span>
+                <% } %>
+                <% if (v.result && !v.result.success) { %><div class="req-err"><%= v.result.message %></div><% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <details class="req-body">
+        <summary>Full email</summary>
+        <pre><%= r.body %></pre>
+      </details>
+
+      <% if (r.reply_text) { %>
+        <details class="req-body">
+          <summary>Reply sent</summary>
+          <pre><%= r.reply_text %></pre>
+        </details>
+      <% } %>
+
+      <% if (r.error_message) { %><pre class="req-err"><%= r.error_message %></pre><% } %>
+
+      <% if (r.status === 'pending' || r.status === 'failed') { %>
+        <div class="req-actions">
+          <form method="POST" action="/admin/requests/<%= r.uuid %>/approve">
+            <button type="submit"><%= r.status === 'failed' ? 'Retry' : 'Approve' %></button>
+          </form>
+          <form method="POST" action="/admin/requests/<%= r.uuid %>/reject" class="admin-form">
+            <input type="text" name="note" placeholder="Optional note to requester" />
+            <button type="submit" class="secondary">Reject &amp; ask for context</button>
+          </form>
+          <form method="POST" action="/admin/requests/<%= r.uuid %>/dismiss">
+            <button type="submit" class="secondary">Dismiss</button>
+          </form>
+        </div>
+      <% } else if (r.status === 'awaiting_context') { %>
+        <div class="req-actions">
+          <form method="POST" action="/admin/requests/<%= r.uuid %>/dismiss">
+            <button type="submit" class="secondary">Dismiss</button>
+          </form>
+        </div>
+      <% } %>
+    </div>
+  <% }) %>
+  <% if (it.archiveRequests.length === 0) { %>
+    <p class="stage-desc">No archive requests yet.</p>
+  <% } %>
+
+  <h3>Auto-approve senders</h3>
+  <p class="stage-desc">Requests from these addresses skip review and are archived immediately.</p>
+
+  <form method="POST" action="/admin/auto-approve" class="admin-form">
+    <input type="email" name="email" placeholder="Sender email" required />
+    <input type="text" name="note" placeholder="Note (optional)" />
+    <button type="submit">Add</button>
+  </form>
+
+  <table class="admin-table">
+    <tbody>
+      <% it.autoApproveSenders.forEach(function(s){ %>
+        <tr>
+          <td><%= s.email %></td>
+          <td><%= s.note || '' %></td>
+          <td>
+            <form method="POST" action="/admin/auto-approve/delete">
+              <input type="hidden" name="email" value="<%= s.email %>" />
+              <button type="submit" class="admin-link-button">Remove</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+      <% if (it.autoApproveSenders.length === 0) { %>
+        <tr><td>No auto-approved senders.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+
   <h3>Glacier Restore</h3>
   <p class="stage-desc">Restore a video from Glacier cold storage back to hot storage. AWS retrieval takes up to 48 hours; once it's done, the video is automatically re-uploaded and the requester is emailed.</p>
 
@@ -121,6 +231,87 @@
 
   .status--failed {
     background-color: #f0d5d5;
+  }
+
+  .req {
+    border: 1px solid #eee;
+    padding: 10px;
+    margin: 12px 0;
+  }
+
+  .req-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .req-from {
+    font-size: 0.85rem;
+    color: #aaa;
+  }
+
+  .req-summary {
+    font-size: 0.9rem;
+    margin: 8px 0;
+  }
+
+  .req-summary span {
+    color: #aaa;
+  }
+
+  .req-body summary {
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 8px;
+  }
+
+  .req-body pre,
+  .req-err {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.85rem;
+  }
+
+  .req-err {
+    color: #a33;
+  }
+
+  .req-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-start;
+    margin-top: 10px;
+  }
+
+  .req-actions .admin-form {
+    margin: 0;
+  }
+
+  .req-actions button {
+    padding: 8px 16px;
+    border: 1px solid #1b1c1f;
+    background-color: #1b1c1f;
+    color: white;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .req-actions button.secondary,
+  .admin-form button.secondary {
+    background-color: transparent;
+    color: inherit;
+  }
+
+  .status--solved,
+  .status--auto {
+    background-color: #d5f0d5;
+  }
+
+  .status--pending,
+  .status--awaiting_context,
+  .status--archiving {
+    background-color: #f0e8c8;
   }
 
   .a {

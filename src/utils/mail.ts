@@ -20,4 +20,21 @@ async function sendRestoreCompleteEmail(to: string, videoId: string, title?: str
   })
 }
 
-export { sendRestoreCompleteEmail }
+async function sendArchiveReplyEmail(to: string, subject: string, text: string, inReplyTo?: string) {
+  const domain = (process.env.SMTP_FROM || '').match(/@([^>\s]+)/)?.[1] || 'preservetube.com'
+  const messageId = `<${crypto.randomUUID()}@${domain}>`
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to,
+    subject: /^re:/i.test(subject) ? subject : `Re: ${subject}`,
+    text,
+    messageId,
+    inReplyTo,
+    references: inReplyTo
+  })
+
+  return messageId
+}
+
+export { sendRestoreCompleteEmail, sendArchiveReplyEmail }
