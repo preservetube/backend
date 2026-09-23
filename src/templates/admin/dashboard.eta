@@ -89,6 +89,85 @@
     <p class="stage-desc">No archive requests yet.</p>
   <% } %>
 
+  <h3>Cold Storage Requests</h3>
+  <p class="stage-desc">Requests to bring a video back from cold storage. Videos still live on YouTube get a link + "why do you need it?" email first. Approve starts the Glacier restore and emails the requester that an automated email follows within 48 hours. Reject asks for more context.</p>
+
+  <% it.coldRequests.forEach(function(r){ %>
+    <div class="req">
+      <div class="req-head">
+        <div>
+          <strong><%= r.subject %></strong>
+          <div class="req-from"><%= r.from_name ? r.from_name + ' ' : '' %>&lt;<%= r.from_email %>&gt; &middot; <%= r.created_at ? new Date(r.created_at).toISOString().slice(0, 16).replace('T', ' ') : '' %></div>
+        </div>
+        <div>
+          <% if (r.auto_approved) { %><span class="status status--auto">auto-approved</span><% } %>
+          <span class="status status--<%= r.status %>"><%= r.status.replace('_', ' ') %></span>
+        </div>
+      </div>
+
+      <% if (r.ai_summary) { %><p class="req-summary"><span>AI:</span> <%= r.ai_summary %></p><% } %>
+
+      <table class="admin-table">
+        <thead>
+          <tr><th>Video</th><th>Title</th><th>Channel</th><th>Length</th><th>Size</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% r.videos.forEach(function(v){ %>
+            <tr>
+              <td><a class="a" href="/watch?v=<%= v.id %>"><%= v.id %></a></td>
+              <td><%= v.title || '?' %></td>
+              <td><%= v.channel || '?' %></td>
+              <td><%= it.fmtLength(v.lengthSeconds) %></td>
+              <td><%= it.fmtBytes(v.sizeBytes) %></td>
+              <td>
+                <% if (v.alive) { %><a class="a" href="https://youtube.com/watch?v=<%= v.id %>" target="_blank" rel="noopener">live on YouTube</a><% } %>
+                <% if (v.result) { %><div class="<%= v.result.success ? '' : 'req-err' %>"><%= v.result.message %></div><% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <details class="req-body">
+        <summary>Full email</summary>
+        <pre><%= r.body %></pre>
+      </details>
+
+      <% if (r.reply_text) { %>
+        <details class="req-body">
+          <summary>Reply sent</summary>
+          <pre><%= r.reply_text %></pre>
+        </details>
+      <% } %>
+
+      <% if (r.error_message) { %><pre class="req-err"><%= r.error_message %></pre><% } %>
+
+      <% if (r.status === 'pending' || r.status === 'failed') { %>
+        <div class="req-actions">
+          <form method="POST" action="/admin/cold-requests/<%= r.uuid %>/approve">
+            <button type="submit"><%= r.status === 'failed' ? 'Retry' : 'Approve restore' %></button>
+          </form>
+          <form method="POST" action="/admin/cold-requests/<%= r.uuid %>/reject" class="admin-form">
+            <input type="text" name="note" placeholder="Optional note to requester" />
+            <button type="submit" class="secondary">Reject &amp; ask for context</button>
+          </form>
+          <form method="POST" action="/admin/cold-requests/<%= r.uuid %>/dismiss">
+            <button type="submit" class="secondary">Dismiss</button>
+          </form>
+        </div>
+      <% } else if (r.status === 'awaiting_context') { %>
+        <div class="req-actions">
+          <form method="POST" action="/admin/cold-requests/<%= r.uuid %>/dismiss">
+            <button type="submit" class="secondary">Dismiss</button>
+          </form>
+        </div>
+      <% } %>
+    </div>
+  <% }) %>
+  <% if (it.coldRequests.length === 0) { %>
+    <p class="stage-desc">No cold storage requests yet.</p>
+  <% } %>
+
   <h3>Auto-approve senders</h3>
   <p class="stage-desc">Requests from these addresses skip review and are archived immediately.</p>
 
@@ -310,7 +389,8 @@
 
   .status--pending,
   .status--awaiting_context,
-  .status--archiving {
+  .status--archiving,
+  .status--approved {
     background-color: #f0e8c8;
   }
 

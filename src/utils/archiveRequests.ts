@@ -1,23 +1,13 @@
-import { sql } from 'kysely'
 import { db } from '@/utils/database'
 import { classifyEmail, draftEmail } from '@/utils/emailAi'
 import redis from '@/utils/redis'
 import { addToSizeWhitelist, archiveVideo, getVideoMetadata } from '@/utils/archive'
 import { sendArchiveReplyEmail } from '@/utils/mail'
+import { jsonb, watchUrl, isAutoApprovedSender } from '@/utils/requestCommon'
+import { createColdRequest } from '@/utils/coldRequests'
 import type { ArchiveRequest, ArchiveRequestVideo } from '@/types'
 
 const RETRY_DELAYS_MS = [0, 0, 45_000, 60_000, 60_000]
-
-const jsonb = (value: unknown) => sql<any>`${JSON.stringify(value)}::jsonb`
-const watchUrl = (id: string) => `https://preservetube.com/watch?v=${id}`
-
-async function isAutoApprovedSender(email: string): Promise<boolean> {
-  const row = await db.selectFrom('auto_approve_senders')
-    .select('email')
-    .where('email', '=', email.toLowerCase())
-    .executeTakeFirst()
-  return Boolean(row)
-}
 
 async function fetchVideos(ids: string[]): Promise<ArchiveRequestVideo[]> {
   return await Promise.all(ids.map(async (id) => {
@@ -49,20 +39,29 @@ async function createRequest(input: {
   body: string
   videoIds: string[]
   bareIds?: string[]
+  // one-time catch-up of old mail: re-classify ignored mail, only cold storage requests count
+  backfill?: boolean
 }): Promise<'created' | 'ignored' | 'duplicate'> {
-  const existing = await db.selectFrom('archive_requests')
-    .select('uuid')
-    .where('message_id', '=', input.messageId)
-    .executeTakeFirst()
-  if (existing) return 'duplicate'
+  const [existingArchive, existingCold] = await Promise.all([
+    db.selectFrom('archive_requests').select('uuid').where('message_id', '=', input.messageId).executeTakeFirst(),
+    db.selectFrom('cold_requests').select('uuid').where('message_id', '=', input.messageId).executeTakeFirst()
+  ])
+  if (existingArchive || existingCold) return 'duplicate'
 
-  // classified as "not an archive request" before: skip without paying for another llm call
+  // classified as "not a request" before: skip without paying for another llm call
   const ignoredKey = `inbox:ignored:${input.messageId}`
-  if (await redis.get(ignoredKey)) return 'ignored'
+  if (!input.backfill && await redis.get(ignoredKey)) return 'ignored'
 
   const verdict = await classifyEmail(input.subject, input.body)
-  if (!verdict.isArchiveRequest) {
-    await redis.set(ignoredKey, '1', 'EX', 30 * 24 * 3600)
+  // the catch-up scan can't tell what an unclassified mail is: fail so it is retried, not skipped
+  if (input.backfill && verdict.failed) throw new Error('AI classification failed')
+  if (verdict.category === 'cold_storage') {
+    const result = await createColdRequest({ ...input, summary: verdict.summary })
+    if (result === 'ignored') await redis.set(ignoredKey, '1', 'EX', 30 * 24 * 3600)
+    return result
+  }
+  if (verdict.category !== 'archive' || input.backfill) {
+    if (!input.backfill) await redis.set(ignoredKey, '1', 'EX', 30 * 24 * 3600)
     return 'ignored'
   }
 

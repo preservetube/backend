@@ -11,6 +11,7 @@ export interface Database {
   files: FilesTable
   restore_requests: RestoreRequestsTable
   archive_requests: ArchiveRequestsTable
+  cold_requests: ColdRequestsTable
   auto_approve_senders: AutoApproveSendersTable
 }
 
@@ -116,6 +117,39 @@ export interface ArchiveRequestsTable {
 export type ArchiveRequest = Selectable<ArchiveRequestsTable>
 export type NewArchiveRequest = Insertable<ArchiveRequestsTable>
 export type UpdateArchiveRequest = Updateable<ArchiveRequestsTable>
+
+export interface ColdRequestVideo {
+  id: string
+  title: string | null
+  channel: string | null
+  channelId: string | null
+  lengthSeconds: number | null
+  sizeBytes: number | null
+  alive: boolean
+  result?: { success: boolean, message: string }
+}
+
+export interface ColdRequestsTable {
+  uuid: Generated<string>
+  message_id: string
+  from_email: string
+  from_name: string | null
+  subject: string | null
+  body: string | null
+  videos: ColdRequestVideo[]
+  ai_summary: string | null
+  status: Generated<'pending' | 'awaiting_context' | 'approved' | 'solved' | 'dismissed' | 'failed'>
+  auto_approved: Generated<boolean>
+  context_message_id: string | null
+  error_message: string | null
+  reply_text: string | null
+  created_at: Generated<Date>
+  updated_at: Generated<Date>
+}
+
+export type ColdRequest = Selectable<ColdRequestsTable>
+export type NewColdRequest = Insertable<ColdRequestsTable>
+export type UpdateColdRequest = Updateable<ColdRequestsTable>
 
 export interface AutoApproveSendersTable {
   email: string

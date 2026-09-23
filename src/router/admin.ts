@@ -9,8 +9,9 @@ import {
   buildSessionCookie,
   clearSessionCookie
 } from '@/utils/adminAuth'
-import { initiateRestore } from '@/utils/glacier'
+import { startRestore, RestoreError } from '@/utils/restore'
 import { approveRequest, rejectRequest, dismissRequest } from '@/utils/archiveRequests'
+import { approveColdRequest, rejectColdRequest, dismissColdRequest } from '@/utils/coldRequests'
 
 const app = new Elysia({ prefix: '/admin' })
 
@@ -73,6 +74,21 @@ app.get('/', async ({ set }) => {
     .limit(100)
     .execute()
 
+  const coldRequests = await db.selectFrom('cold_requests')
+    .selectAll()
+    .orderBy('created_at', 'desc')
+    .limit(100)
+    .execute()
+
+  const fmtBytes = (bytes: number | null) => {
+    if (bytes === null || bytes === undefined) return '?'
+    const units = ['B', 'KB', 'MB', 'GB', 'TB']
+    let value = Number(bytes)
+    let i = 0
+    while (value >= 1024 && i < units.length - 1) { value /= 1024; i++ }
+    return `${value.toFixed(i ? 1 : 0)} ${units[i]}`
+  }
+
   const autoApproveSenders = await db.selectFrom('auto_approve_senders')
     .selectAll()
     .orderBy('created_at', 'asc')
@@ -91,37 +107,22 @@ app.get('/', async ({ set }) => {
     title: 'Admin | PreserveTube',
     requests,
     archiveRequests,
+    coldRequests,
     autoApproveSenders,
-    fmtLength
+    fmtLength,
+    fmtBytes
   }))
 })
 
 app.post('/restore', async ({ body, redirect, error }) => {
   const { videoId, requesterEmail } = body
 
-  const video = await db.selectFrom('videos')
-    .select(['id', 'deletion_stage'])
-    .where('id', '=', videoId)
-    .executeTakeFirst()
-
-  if (!video) return error(404, 'No archived video found with that ID.')
-  if (video.deletion_stage !== 'cold_storage') return error(400, 'That video is not currently in cold storage.')
-
-  const inserted = await db.insertInto('restore_requests')
-    .values({
-      videoId,
-      requester_email: requesterEmail,
-      status: 'requested'
-    })
-    .returning('uuid')
-    .executeTakeFirstOrThrow()
-
-  await initiateRestore(videoId)
-
-  await db.updateTable('restore_requests')
-    .set({ status: 'restoring', aws_restore_requested_at: new Date(), updated_at: new Date() })
-    .where('uuid', '=', inserted.uuid)
-    .execute()
+  try {
+    await startRestore(videoId, requesterEmail)
+  } catch (err: unknown) {
+    if (err instanceof RestoreError) return error(err.status as 400 | 404, err.message)
+    throw err
+  }
 
   return redirect('/admin')
 }, {
@@ -147,6 +148,25 @@ app.post('/requests/:id/reject', async ({ params, body, redirect }) => {
 
 app.post('/requests/:id/dismiss', async ({ params, redirect }) => {
   await dismissRequest(params.id)
+  return redirect('/admin')
+})
+
+app.post('/cold-requests/:id/approve', async ({ params, redirect }) => {
+  await approveColdRequest(params.id)
+  return redirect('/admin')
+})
+
+app.post('/cold-requests/:id/reject', async ({ params, body, redirect }) => {
+  await rejectColdRequest(params.id, body.note)
+  return redirect('/admin')
+}, {
+  body: t.Object({
+    note: t.Optional(t.String())
+  })
+})
+
+app.post('/cold-requests/:id/dismiss', async ({ params, redirect }) => {
+  await dismissColdRequest(params.id)
   return redirect('/admin')
 })
 

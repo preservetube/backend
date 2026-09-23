@@ -1,10 +1,16 @@
 import { ImapFlow } from 'imapflow'
 import { simpleParser, type ParsedMail } from 'mailparser'
 import { db } from '@/utils/database'
+import redis from '@/utils/redis'
 import { addContext, createRequest } from '@/utils/archiveRequests'
+import { addColdContext } from '@/utils/coldRequests'
 import { extractBareIds, extractUrlIds } from '@/utils/youtubeIds'
+import type { ArchiveRequest, ColdRequest } from '@/types'
 
 const POLL_INTERVAL_MS = 2 * 60000
+const INGESTED_FOLDER = 'ingested'
+// bump the suffix to run the catch-up scan again
+const BACKFILL_KEY = 'inbox:backfill:cold:v1'
 let running = false
 
 function bodyOf(mail: ParsedMail): string {
@@ -27,18 +33,22 @@ function referencedIds(mail: ParsedMail): string[] {
   return [...refs, ...(mail.inReplyTo ? [mail.inReplyTo] : [])]
 }
 
-// returns true when the mail was handled and should be flagged seen
-async function processMail(mail: ParsedMail, fallbackId: string): Promise<boolean> {
+// ingested: became (or already is) a request or answered one, moves to the ingested folder
+// seen: nothing to do with it, just flag it read
+// skip: leave it in the inbox for a human
+type MailResult = 'ingested' | 'seen' | 'skip'
+
+async function processMail(mail: ParsedMail, fallbackId: string, backfill: boolean): Promise<MailResult> {
   const from = mail.from?.value[0]
-  if (!from?.address) return true
+  if (!from?.address) return 'seen'
 
   const address = from.address.toLowerCase()
   const own = [process.env.IMAP_USER, process.env.SMTP_FROM]
     .map(v => v?.match(/[^<\s]+@[^>\s]+/)?.[0]?.toLowerCase())
     .filter(Boolean)
-  if (own.includes(address)) return true
+  if (own.includes(address)) return 'seen'
   // leave automated mail unread for a human to glance at
-  if (isAutomated(mail, address)) return false
+  if (isAutomated(mail, address)) return 'skip'
 
   const body = bodyOf(mail)
   const raw = `${mail.text || ''}\n${typeof mail.html === 'string' ? mail.html : ''}`
@@ -48,32 +58,22 @@ async function processMail(mail: ParsedMail, fallbackId: string): Promise<boolea
   // answer to our "need more context" mail: match by thread headers, else by sender
   // (some smtp providers rewrite Message-ID, which breaks header matching)
   const refs = referencedIds(mail)
-  let awaiting = refs.length
-    ? await db.selectFrom('archive_requests')
-      .selectAll()
-      .where('status', '=', 'awaiting_context')
-      .where('context_message_id', 'in', refs)
-      .executeTakeFirst()
-    : undefined
+  const isReply = Boolean(mail.inReplyTo) || /^(re|aw|sv|fw):/i.test(mail.subject || '')
 
-  if (!awaiting) {
-    const bySender = await db.selectFrom('archive_requests')
-      .selectAll()
-      .where('status', '=', 'awaiting_context')
-      .where('from_email', '=', address)
-      .orderBy('updated_at', 'desc')
-      .execute()
-    // only when unambiguous, otherwise it is a new request from the same person
-    if (bySender.length === 1 && (mail.inReplyTo || /^(re|aw|sv|fw):/i.test(mail.subject || ''))) awaiting = bySender[0]
+  const awaitingArchive = await findAwaiting('archive_requests', address, refs, isReply)
+  if (awaitingArchive) {
+    await addContext(awaitingArchive, body, videoIds)
+    return 'ingested'
   }
 
-  if (awaiting) {
-    await addContext(awaiting, body, videoIds)
-    return true
+  const awaitingCold = await findAwaiting('cold_requests', address, refs, isReply)
+  if (awaitingCold) {
+    await addColdContext(awaitingCold, body, videoIds)
+    return 'ingested'
   }
 
-  // no youtube id at all = not something we can archive, leave it in the inbox for a human
-  if (videoIds.length === 0 && bareIds.length === 0) return false
+  // no youtube id at all = not something we can act on, leave it in the inbox for a human
+  if (videoIds.length === 0 && bareIds.length === 0) return 'skip'
 
   const result = await createRequest({
     messageId: mail.messageId || fallbackId,
@@ -82,13 +82,36 @@ async function processMail(mail: ParsedMail, fallbackId: string): Promise<boolea
     subject: mail.subject || '(no subject)',
     body,
     videoIds,
-    bareIds
+    bareIds,
+    backfill
   })
-  // not an archive request (removal, abuse, spam...): leave unread for a human, redis remembers it
-  return result !== 'ignored'
+  // not a request (removal, abuse, spam...): leave in the inbox for a human, redis remembers it
+  return result === 'ignored' ? 'skip' : 'ingested'
 }
 
-async function pollInbox() {
+async function findAwaiting(table: 'archive_requests', address: string, refs: string[], isReply: boolean): Promise<ArchiveRequest | undefined>
+async function findAwaiting(table: 'cold_requests', address: string, refs: string[], isReply: boolean): Promise<ColdRequest | undefined>
+async function findAwaiting(table: 'archive_requests' | 'cold_requests', address: string, refs: string[], isReply: boolean): Promise<any> {
+  const byRefs = refs.length
+    ? await db.selectFrom(table)
+      .selectAll()
+      .where('status', '=', 'awaiting_context')
+      .where('context_message_id', 'in', refs)
+      .executeTakeFirst()
+    : undefined
+  if (byRefs) return byRefs
+
+  const bySender = await db.selectFrom(table)
+    .selectAll()
+    .where('status', '=', 'awaiting_context')
+    .where('from_email', '=', address)
+    .orderBy('updated_at', 'desc')
+    .execute()
+  // only when unambiguous, otherwise it is a new request from the same person
+  return bySender.length === 1 && isReply ? bySender[0] : undefined
+}
+
+async function pollInbox(backfill = false) {
   if (running) return
   running = true
 
@@ -106,10 +129,15 @@ async function pollInbox() {
 
   try {
     await client.connect()
+    // fails when it already exists, which is fine
+    await client.mailboxCreate(INGESTED_FOLDER).catch(() => {})
     const lock = await client.getMailboxLock('INBOX')
 
     try {
-      const uids = await client.search({ seen: false }, { uid: true }) || []
+      // the catch-up scan looks at everything: old mail may already be read or was ignored earlier
+      const uids = await client.search(backfill ? { all: true } : { seen: false }, { uid: true }) || []
+      if (backfill) console.log(`[inbox] catch-up scan over ${uids.length} mails`)
+      let failures = 0
 
       for (const uid of uids) {
         try {
@@ -117,13 +145,32 @@ async function pollInbox() {
           if (!msg || !msg.source) continue
 
           const mail = await simpleParser(msg.source)
-          if (await processMail(mail, `<uid-${uid}@${process.env.IMAP_HOST}>`)) {
-            await client.messageFlagsAdd(String(uid), ['\\Seen'], { uid: true })
+          const result = await processMail(mail, `<uid-${uid}@${process.env.IMAP_HOST}>`, backfill)
+          if (result === 'skip') continue
+
+          await client.messageFlagsAdd(String(uid), ['\\Seen'], { uid: true })
+          if (result === 'ingested') {
+            try {
+              await client.messageMove(String(uid), INGESTED_FOLDER, { uid: true })
+            } catch (error: unknown) {
+              // unread again so the next poll retries the move (the request itself is deduped)
+              console.log(`[inbox] failed to move uid ${uid}: ${(error as Error).message}`)
+              if (!backfill) await client.messageFlagsRemove(String(uid), ['\\Seen'], { uid: true })
+            }
           }
         } catch (error: unknown) {
           // leave unseen so the next poll retries it
           console.log(`[inbox] failed to process uid ${uid}: ${(error as Error).message}`)
+          failures++
         }
+      }
+
+      // any failure (e.g. AI down) means the scan reruns on next start; finished mails dedupe
+      if (backfill && failures === 0) {
+        await redis.set(BACKFILL_KEY, '1')
+        console.log('[inbox] catch-up scan done')
+      } else if (backfill) {
+        console.log(`[inbox] catch-up scan had ${failures} failures, will rerun on next start`)
       }
     } finally {
       lock.release()
@@ -148,8 +195,14 @@ async function startInboxPoller() {
     .where('status', 'in', ['archiving'])
     .execute()
 
-  pollInbox()
-  setInterval(pollInbox, POLL_INTERVAL_MS).unref()
+  await db.updateTable('cold_requests')
+    .set({ status: 'failed', error_message: 'Interrupted by server restart, retry.', updated_at: new Date() })
+    .where('status', '=', 'approved')
+    .execute()
+
+  // first run after this feature shipped: catch up old mail once
+  pollInbox(!(await redis.get(BACKFILL_KEY)))
+  setInterval(() => pollInbox(), POLL_INTERVAL_MS).unref()
   console.log('inbox poller started (this server is primary)')
 }
 
