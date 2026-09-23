@@ -8,6 +8,8 @@ import video from '@/router/video'
 import websocket from '@/router/websocket'
 import html from '@/router/html'
 import mcp from '@/router/mcp'
+import admin from '@/router/admin'
+import { startRestorePoller } from '@/utils/glacierPoller'
 
 const app = new Elysia()
 app.use(latest)
@@ -17,6 +19,11 @@ app.use(video)
 app.use(websocket)
 app.use(html)
 app.use(mcp)
+app.use(admin)
+
+if (process.env.IS_PRIMARY === 'true') {
+  startRestorePoller()
+}
 app.onRequest(({ set, request }: { set: { headers: Record<string, string> }, request: Request }) => {
   set.headers['Onion-Location'] = 'http://tubey5btlzxkcjpxpj2c7irrbhvgu3noouobndafuhbw4i5ndvn4v7qd.onion/' + request.url.split('/').at(-1)
 })

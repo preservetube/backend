@@ -1,0 +1,130 @@
+<% layout('../layout') %>
+
+<div class="page">
+  <div class="admin-nav">
+    <h2>Admin</h2>
+    <form method="POST" action="/admin/logout">
+      <button type="submit" class="admin-link-button">Log out</button>
+    </form>
+  </div>
+
+  <h3>Glacier Restore</h3>
+  <p class="stage-desc">Restore a video from Glacier cold storage back to hot storage. AWS retrieval takes up to 48 hours; once it's done, the video is automatically re-uploaded and the requester is emailed.</p>
+
+  <form method="POST" action="/admin/restore" class="admin-form">
+    <input type="text" name="videoId" placeholder="Video ID" required />
+    <input type="email" name="requesterEmail" placeholder="Requester email" required />
+    <button type="submit">Restore</button>
+  </form>
+
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Video</th>
+        <th>Requester</th>
+        <th>Status</th>
+        <th>Requested</th>
+        <th>Error</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% it.requests.forEach(function(r){ %>
+        <tr>
+          <td><a class="a" href="/watch?v=<%= r.videoId %>"><%= r.videoId %></a></td>
+          <td><%= r.requester_email %></td>
+          <td><span class="status status--<%= r.status %>"><%= r.status %></span></td>
+          <td><%= r.created_at ? new Date(r.created_at).toISOString() : '' %></td>
+          <td><%= r.error_message || '' %></td>
+        </tr>
+      <% }) %>
+      <% if (it.requests.length === 0) { %>
+        <tr><td colspan="5">No restore requests yet.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .page {
+    margin: 0 auto;
+    padding: 5px 10px 10px;
+    width: 65%;
+  }
+
+  .admin-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+  }
+
+  .admin-link-button {
+    background: none;
+    border: none;
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+    padding: 0;
+  }
+
+  .stage-desc {
+    font-size: 0.9rem;
+    color: #aaa;
+  }
+
+  .admin-form {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0 20px;
+  }
+
+  .admin-form input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    font-family: inherit;
+  }
+
+  .admin-form button {
+    padding: 8px 16px;
+    border: 1px solid #1b1c1f;
+    background-color: #1b1c1f;
+    color: white;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    text-align: left;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+  }
+
+  .status {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: #eee;
+  }
+
+  .status--reuploaded {
+    background-color: #d5f0d5;
+  }
+
+  .status--failed {
+    background-color: #f0d5d5;
+  }
+
+  .a {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+  }
+</style>
