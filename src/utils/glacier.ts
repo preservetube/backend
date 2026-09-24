@@ -5,15 +5,30 @@ import { S3Client, RestoreObjectCommand, HeadObjectCommand, GetObjectCommand } f
 
 const s3 = new S3Client({ region: process.env.AWS_REGION })
 
-function objectKey(videoId: string) {
-  return `${videoId}.mp4`
+const EXTENSIONS = ['mp4', 'webm']
+
+// glacier objects keep their original extension, so find which one this video has
+async function resolveObjectKey(videoId: string): Promise<string> {
+  for (const ext of EXTENSIONS) {
+    const key = `${videoId}.${ext}`
+    try {
+      await s3.send(new HeadObjectCommand({ Bucket: process.env.GLACIER_BUCKET, Key: key }))
+      return key
+    } catch (error: unknown) {
+      const err = error as { name?: string, $metadata?: { httpStatusCode?: number } }
+      if (err.name === 'NotFound' || err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) continue
+      throw error
+    }
+  }
+  throw new Error(`No object found in cold storage bucket for ${videoId} (tried ${EXTENSIONS.join(', ')})`)
 }
 
 async function initiateRestore(videoId: string, days = 5) {
+  const key = await resolveObjectKey(videoId)
   try {
     await s3.send(new RestoreObjectCommand({
       Bucket: process.env.GLACIER_BUCKET,
-      Key: objectKey(videoId),
+      Key: key,
       RestoreRequest: {
         Days: days,
         GlacierJobParameters: { Tier: 'Standard' }
@@ -29,7 +44,7 @@ async function initiateRestore(videoId: string, days = 5) {
 async function checkRestoreStatus(videoId: string): Promise<{ ongoing: boolean, expiry: Date | null }> {
   const head = await s3.send(new HeadObjectCommand({
     Bucket: process.env.GLACIER_BUCKET,
-    Key: objectKey(videoId)
+    Key: await resolveObjectKey(videoId)
   }))
 
   const restoreHeader = head.Restore
@@ -43,12 +58,13 @@ async function checkRestoreStatus(videoId: string): Promise<{ ongoing: boolean, 
 }
 
 async function downloadRestoredObjectToFile(videoId: string, destPath: string) {
+  const key = await resolveObjectKey(videoId)
   const object = await s3.send(new GetObjectCommand({
     Bucket: process.env.GLACIER_BUCKET,
-    Key: objectKey(videoId)
+    Key: key
   }))
 
-  if (!object.Body) throw new Error(`No body returned for restored object ${objectKey(videoId)}`)
+  if (!object.Body) throw new Error(`No body returned for restored object ${key}`)
 
   const nodeStream = object.Body instanceof Readable
     ? object.Body
@@ -57,4 +73,4 @@ async function downloadRestoredObjectToFile(videoId: string, destPath: string) {
   await pipeline(nodeStream, fs.createWriteStream(destPath))
 }
 
-export { initiateRestore, checkRestoreStatus, downloadRestoredObjectToFile }
+export { resolveObjectKey, initiateRestore, checkRestoreStatus, downloadRestoredObjectToFile }

@@ -2,7 +2,7 @@ import * as fs from 'node:fs'
 import { db } from '@/utils/database'
 import redis from '@/utils/redis'
 import { uploadVideo } from '@/utils/upload'
-import { checkRestoreStatus, downloadRestoredObjectToFile } from '@/utils/glacier'
+import { resolveObjectKey, checkRestoreStatus, downloadRestoredObjectToFile } from '@/utils/glacier'
 import { sendRestoreCompleteEmail } from '@/utils/mail'
 
 const POLL_INTERVAL_MS = 10 * 60000
@@ -16,7 +16,7 @@ async function processRestoringRow(row: { uuid: string, videoId: string, request
     .where('uuid', '=', row.uuid)
     .execute()
 
-  const filePath = `./videos/${row.videoId}.mp4`
+  const filePath = `./videos/${await resolveObjectKey(row.videoId)}`
   try {
     await downloadRestoredObjectToFile(row.videoId, filePath)
     const videoUrl = await uploadVideo(filePath)
