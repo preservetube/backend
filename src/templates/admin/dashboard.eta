@@ -8,7 +8,10 @@
     </form>
   </div>
 
-  <h3>Archive Requests</h3>
+  <div class="section-head">
+    <h3>Archive Requests</h3>
+    <form method="GET" action="/admin/inbox"><button type="submit">manually ingest</button></form>
+  </div>
   <p class="stage-desc">Requests found in the admin inbox. Approve to whitelist + archive and email the requester the links. Reject asks the requester for more context (optionally with your note) instead of refusing.</p>
 
   <% it.archiveRequests.forEach(function(r){ %>
@@ -245,6 +248,27 @@
     align-items: center;
     justify-content: space-between;
     margin-top: 12px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 1em;
+  }
+
+  .section-head h3 {
+    margin: 0;
+  }
+
+  .section-head button {
+    padding: 8px 16px;
+    border: 1px solid #1b1c1f;
+    background-color: #1b1c1f;
+    color: white;
+    cursor: pointer;
+    font-family: inherit;
   }
 
   .admin-link-button {

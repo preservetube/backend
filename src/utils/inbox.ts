@@ -38,6 +38,13 @@ function referencedIds(mail: ParsedMail): string[] {
 // skip: leave it in the inbox for a human
 type MailResult = 'ingested' | 'seen' | 'skip'
 
+interface InboxMail {
+  uid: number
+  fromEmail: string
+  fromName: string | null
+  subject: string
+}
+
 async function processMail(mail: ParsedMail, fallbackId: string, backfill: boolean): Promise<MailResult> {
   const from = mail.from?.value[0]
   if (!from?.address) return 'seen'
@@ -183,6 +190,102 @@ async function pollInbox(backfill = false) {
   }
 }
 
+async function listInboxMail(): Promise<InboxMail[]> {
+  if (!process.env.IMAP_HOST || !process.env.IMAP_USER || !process.env.IMAP_PASS) return []
+
+  const port = Number(process.env.IMAP_PORT || 993)
+  const client = new ImapFlow({
+    host: process.env.IMAP_HOST,
+    port,
+    secure: port === 993,
+    auth: { user: process.env.IMAP_USER, pass: process.env.IMAP_PASS },
+    logger: false
+  })
+  client.on('error', (error: Error) => console.log(`[inbox] connection error: ${error.message}`))
+
+  try {
+    await client.connect()
+    const lock = await client.getMailboxLock('INBOX')
+
+    try {
+      const uids = await client.search({ all: true }, { uid: true }) || []
+      const mails: InboxMail[] = []
+
+      for (const uid of uids.slice(-20).reverse()) {
+        const msg = await client.fetchOne(String(uid), { source: true }, { uid: true })
+        if (!msg || !msg.source) continue
+
+        const mail = await simpleParser(msg.source)
+        mails.push({
+          uid,
+          fromEmail: mail.from?.value[0]?.address || '(unknown sender)',
+          fromName: mail.from?.value[0]?.name || null,
+          subject: mail.subject || '(no subject)'
+        })
+      }
+
+      return mails
+    } finally {
+      lock.release()
+    }
+  } finally {
+    await client.logout().catch(() => {})
+  }
+}
+
+async function ingestInboxMail(uid: number): Promise<'created' | 'duplicate' | 'ignored' | 'missing'> {
+  if (!process.env.IMAP_HOST || !process.env.IMAP_USER || !process.env.IMAP_PASS) return 'missing'
+
+  const port = Number(process.env.IMAP_PORT || 993)
+  const client = new ImapFlow({
+    host: process.env.IMAP_HOST,
+    port,
+    secure: port === 993,
+    auth: { user: process.env.IMAP_USER, pass: process.env.IMAP_PASS },
+    logger: false
+  })
+  client.on('error', (error: Error) => console.log(`[inbox] connection error: ${error.message}`))
+
+  try {
+    await client.connect()
+    await client.mailboxCreate(INGESTED_FOLDER).catch(() => {})
+    const lock = await client.getMailboxLock('INBOX')
+
+    try {
+      const msg = await client.fetchOne(String(uid), { source: true }, { uid: true })
+      if (!msg || !msg.source) return 'missing'
+
+      const mail = await simpleParser(msg.source)
+      const from = mail.from?.value[0]
+      if (!from?.address) return 'ignored'
+
+      const body = bodyOf(mail)
+      const raw = `${mail.text || ''}\n${typeof mail.html === 'string' ? mail.html : ''}`
+      const videoIds = extractUrlIds(raw)
+      const result = await createRequest({
+        messageId: mail.messageId || `<uid-${uid}@${process.env.IMAP_HOST}>`,
+        fromEmail: from.address,
+        fromName: from.name || null,
+        subject: mail.subject || '(no subject)',
+        body,
+        videoIds,
+        bareIds: extractBareIds(mail.text || body, new Set(videoIds)),
+        forceArchive: true
+      })
+
+      if (result !== 'ignored') {
+        await client.messageFlagsAdd(String(uid), ['\\Seen'], { uid: true })
+        await client.messageMove(String(uid), INGESTED_FOLDER, { uid: true })
+      }
+      return result
+    } finally {
+      lock.release()
+    }
+  } finally {
+    await client.logout().catch(() => {})
+  }
+}
+
 async function startInboxPoller() {
   if (!process.env.IMAP_HOST || !process.env.IMAP_USER || !process.env.IMAP_PASS) {
     console.log('inbox poller disabled (IMAP_HOST / IMAP_USER / IMAP_PASS not set)')
@@ -206,4 +309,4 @@ async function startInboxPoller() {
   console.log('inbox poller started (this server is primary)')
 }
 
-export { startInboxPoller, pollInbox }
+export { startInboxPoller, pollInbox, listInboxMail, ingestInboxMail }

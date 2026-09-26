@@ -1,0 +1,52 @@
+<% layout('../layout') %>
+
+<div class="page">
+  <div class="admin-nav">
+    <h2>Admin Inbox</h2>
+    <a class="a" href="/admin">Back to requests</a>
+  </div>
+
+  <p class="stage-desc">Select one of the latest 20 emails in INBOX. Manually ingesting bypasses AI classification, but still requires a valid YouTube video ID.</p>
+
+  <% if (it.mails.length) { %>
+    <form method="POST" action="/admin/inbox/ingest">
+      <table class="admin-table">
+        <thead><tr><th></th><th>Sender</th><th>Subject</th></tr></thead>
+        <tbody>
+          <% it.mails.forEach(function(mail, index){ %>
+            <tr>
+              <td><input type="radio" name="uid" value="<%= mail.uid %>" <%= index === 0 ? 'checked' : '' %> required /></td>
+              <td><%= mail.fromName ? mail.fromName + ' ' : '' %>&lt;<%= mail.fromEmail %>&gt;</td>
+              <td><%= mail.subject %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <div class="form-actions"><button type="submit">manually ingest selected email</button></div>
+    </form>
+  <% } %>
+  <% if (it.mails.length === 0) { %><p class="stage-desc">The inbox is empty or the inbox integration is disabled.</p><% } %>
+</div>
+
+<style>
+  .page { margin: 0 auto; padding: 5px 10px 10px; width: 65%; }
+  .admin-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .stage-desc { color: #aaa; font-size: 0.9rem; }
+  .admin-table { border-collapse: collapse; width: 100%; }
+  .admin-table th, .admin-table td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 0.9rem; }
+  .admin-table tbody tr:has(input:checked) { background-color: #f7f7f7; }
+  .form-actions { margin-top: 12px; }
+  .form-actions button {
+    padding: 8px 16px;
+    border: 1px solid #1b1c1f;
+    background-color: #1b1c1f;
+    color: white;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .a { text-decoration-line: underline; text-decoration-style: dotted; }
+  @media (max-width: 900px) {
+    .page { width: auto; }
+    .admin-table { display: block; overflow-x: auto; }
+  }
+</style>

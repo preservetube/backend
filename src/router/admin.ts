@@ -12,6 +12,7 @@ import {
 import { startRestore, RestoreError } from '@/utils/restore'
 import { approveRequest, rejectRequest, dismissRequest } from '@/utils/archiveRequests'
 import { approveColdRequest, rejectColdRequest, dismissColdRequest } from '@/utils/coldRequests'
+import { ingestInboxMail, listInboxMail } from '@/utils/inbox'
 
 const app = new Elysia({ prefix: '/admin' })
 
@@ -112,6 +113,23 @@ app.get('/', async ({ set }) => {
     fmtLength,
     fmtBytes
   }))
+})
+
+app.get('/inbox', async ({ set }) => {
+  set.headers['Content-Type'] = 'text/html; charset=utf-8'
+  return await m(eta.render('./admin/inbox', {
+    title: 'Inbox | PreserveTube Admin',
+    mails: await listInboxMail()
+  }))
+})
+
+app.post('/inbox/ingest', async ({ body, redirect }) => {
+  await ingestInboxMail(body.uid)
+  return redirect('/admin')
+}, {
+  body: t.Object({
+    uid: t.Numeric()
+  })
 })
 
 app.post('/restore', async ({ body, redirect, error }) => {

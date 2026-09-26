@@ -41,6 +41,7 @@ async function createRequest(input: {
   bareIds?: string[]
   // one-time catch-up of old mail: re-classify ignored mail, only cold storage requests count
   backfill?: boolean
+  forceArchive?: boolean
 }): Promise<'created' | 'ignored' | 'duplicate'> {
   const [existingArchive, existingCold] = await Promise.all([
     db.selectFrom('archive_requests').select('uuid').where('message_id', '=', input.messageId).executeTakeFirst(),
@@ -50,9 +51,11 @@ async function createRequest(input: {
 
   // classified as "not a request" before: skip without paying for another llm call
   const ignoredKey = `inbox:ignored:${input.messageId}`
-  if (!input.backfill && await redis.get(ignoredKey)) return 'ignored'
+  if (!input.backfill && !input.forceArchive && await redis.get(ignoredKey)) return 'ignored'
 
-  const verdict = await classifyEmail(input.subject, input.body)
+  const verdict = input.forceArchive
+    ? { category: 'archive' as const, summary: 'Manually ingested from the admin inbox.' }
+    : await classifyEmail(input.subject, input.body)
   // the catch-up scan can't tell what an unclassified mail is: fail so it is retried, not skipped
   if (input.backfill && verdict.failed) throw new Error('AI classification failed')
   if (verdict.category === 'cold_storage') {
