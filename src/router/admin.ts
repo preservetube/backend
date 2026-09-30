@@ -10,9 +10,11 @@ import {
   clearSessionCookie
 } from '@/utils/adminAuth'
 import { startRestore, RestoreError } from '@/utils/restore'
-import { approveRequest, rejectRequest, dismissRequest } from '@/utils/archiveRequests'
+import { approveRequest, rejectRequest, dismissRequest, archiveWithRetry } from '@/utils/archiveRequests'
 import { approveColdRequest, rejectColdRequest, dismissColdRequest } from '@/utils/coldRequests'
 import { ingestInboxMail, listInboxMail } from '@/utils/inbox'
+import { extractVideoId } from '@/utils/archive'
+import redis from '@/utils/redis'
 
 const app = new Elysia({ prefix: '/admin' })
 
@@ -120,6 +122,56 @@ app.get('/inbox', async ({ set }) => {
   return await m(eta.render('./admin/inbox', {
     title: 'Inbox | PreserveTube Admin',
     mails: await listInboxMail()
+  }))
+})
+
+app.get('/archive', async ({ set }) => {
+  set.headers['Content-Type'] = 'text/html; charset=utf-8'
+  return await m(eta.render('./admin/archive', {
+    title: 'Manual Archive | PreserveTube Admin'
+  }))
+})
+
+app.post('/archive', async ({ body, set, redirect }) => {
+  const videoId = extractVideoId(body.video)
+  if (!videoId) {
+    set.headers['Content-Type'] = 'text/html; charset=utf-8'
+    set.status = 400
+    return await m(eta.render('./admin/archive', {
+      title: 'Manual Archive | PreserveTube Admin',
+      archiveError: 'Enter a valid YouTube video URL or ID.'
+    }))
+  }
+
+  const jobId = crypto.randomUUID()
+  await redis.hset(`admin:manual-archive:${jobId}`, 'videoId', videoId, 'status', 'archiving')
+  await redis.expire(`admin:manual-archive:${jobId}`, 24 * 3600)
+
+  archiveWithRetry(videoId).then(async result => {
+    await redis.hset(`admin:manual-archive:${jobId}`, 'status', result.success ? 'done' : 'failed', 'message', result.message)
+  }).catch(async (error: unknown) => {
+    console.log(`[manual-archive] ${videoId} failed: ${(error as Error).message}`)
+    await redis.hset(`admin:manual-archive:${jobId}`, 'status', 'failed', 'message', (error as Error).message)
+  })
+
+  return redirect(`/admin/archive/${jobId}`)
+}, {
+  body: t.Object({
+    video: t.String()
+  })
+})
+
+app.get('/archive/:jobId', async ({ params, set }) => {
+  const job = /^[0-9a-f-]{36}$/.test(params.jobId)
+    ? await redis.hgetall(`admin:manual-archive:${params.jobId}`)
+    : {}
+  set.headers['Content-Type'] = 'text/html; charset=utf-8'
+  if (job.status === 'archiving') set.headers['Refresh'] = '5'
+  if (!job.status) set.status = 404
+  return await m(eta.render('./admin/archive', {
+    title: 'Manual Archive | PreserveTube Admin',
+    job,
+    archiveError: job.status ? null : 'Archive job not found or expired.'
   }))
 })
 

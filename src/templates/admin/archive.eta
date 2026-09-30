@@ -1,0 +1,44 @@
+<% layout('../layout') %>
+
+<div class="page">
+  <div class="admin-nav">
+    <h2>Manual Archive</h2>
+    <a class="a" href="/admin">Back to requests</a>
+  </div>
+
+  <p class="stage-desc">Archive a YouTube video directly. Longer videos are added to the size whitelist before archiving.</p>
+
+  <form method="POST" action="/admin/archive" class="archive-form">
+    <input type="text" name="video" placeholder="YouTube video URL or ID" aria-label="YouTube video URL or ID" required />
+    <button type="submit">Archive video</button>
+  </form>
+
+  <% if (it.archiveError) { %><p class="error"><%= it.archiveError %></p><% } %>
+
+  <% if (it.job?.status) { %>
+    <div class="result">
+      <p><strong>Video:</strong> <a class="a" href="https://youtube.com/watch?v=<%= it.job.videoId %>" target="_blank" rel="noopener"><%= it.job.videoId %></a></p>
+      <% if (it.job.status === 'archiving') { %>
+        <p>Archiving in progress. This page refreshes automatically.</p>
+      <% } else if (it.job.status === 'done') { %>
+        <p><%= it.job.message %></p>
+        <p><a class="a" href="/watch?v=<%= it.job.videoId %>">Watch archived video</a></p>
+      <% } else { %>
+        <p class="error"><%= it.job.message || 'Archiving failed.' %></p>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+
+<style>
+  .page { margin: 0 auto; padding: 5px 10px 10px; width: 65%; }
+  .admin-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .stage-desc { color: #aaa; font-size: 0.9rem; }
+  .archive-form { display: flex; gap: 8px; margin: 20px 0; }
+  .archive-form input { flex: 1; min-width: 0; padding: 8px; border: 1px solid #ccc; font-family: inherit; }
+  .archive-form button { padding: 8px 16px; border: 1px solid #1b1c1f; background-color: #1b1c1f; color: white; cursor: pointer; font-family: inherit; }
+  .result { border: 1px solid #eee; padding: 10px; }
+  .error { color: #a33; }
+  .a { text-decoration-line: underline; text-decoration-style: dotted; }
+  @media (max-width: 900px) { .page { width: auto; } }
+</style>

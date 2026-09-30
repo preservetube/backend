@@ -281,4 +281,4 @@ async function dismissRequest(uuid: string): Promise<void> {
     .execute()
 }
 
-export { createRequest, addContext, approveRequest, rejectRequest, dismissRequest, classifyEmail }
+export { createRequest, addContext, approveRequest, rejectRequest, dismissRequest, classifyEmail, archiveWithRetry }

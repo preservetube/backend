@@ -10,7 +10,10 @@
 
   <div class="section-head">
     <h3>Archive Requests</h3>
-    <form method="GET" action="/admin/inbox"><button type="submit">manually ingest</button></form>
+    <div class="section-actions">
+      <form method="GET" action="/admin/inbox"><button type="submit">manually ingest</button></form>
+      <form method="GET" action="/admin/archive"><button type="submit">manually archive</button></form>
+    </div>
   </div>
   <p class="stage-desc">Requests found in the admin inbox. Approve to whitelist + archive and email the requester the links. Reject asks the requester for more context (optionally with your note) instead of refusing.</p>
 
@@ -260,6 +263,12 @@
 
   .section-head h3 {
     margin: 0;
+  }
+
+  .section-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .section-head button {
