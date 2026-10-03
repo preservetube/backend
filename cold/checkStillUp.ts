@@ -134,6 +134,7 @@ async function getPageViewsWithRetry(id: string, retries = 3, delay = 1000): Pro
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const response = await fetch(`https://a.gloe.net/api/stats/preservetube.com/top-stats?period=all&date=2026-04-29&filters=%7B%22page%22%3A%22%2Fwatch%2F${id}%22%7D&with_imported=true&comparison=previous_period&compare_from=undefined&compare_to=undefined&match_day_of_week=true`, {
+        headers: process.env.PLAUSIBLE_COOKIE ? { cookie: process.env.PLAUSIBLE_COOKIE } : undefined
       })
       if (response.ok) {
         const aJson = await response.json() as any
