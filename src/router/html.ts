@@ -27,7 +27,7 @@ app.get('/save', async ({ query: { url }, set, headers, error, request, redirect
   if (!url) return error(400, 'No url provided.')
 
   const ranges = await checkIpRanges(headers['cf-connecting-ip'] || headers['x-forwarded-for'] || '')
-  if (ranges.blocked || headers['cf-ipcountry'] === 'T1') {
+  if (ranges.blocked || headers['cf-ipcountry'] === 'T1' || headers['cf-ipcountry'] === 'CN') {
     set.headers['Content-Type'] = 'text/html; charset=utf-8'
     return error(412, await m(eta.render('./blocked', {
       title: 'Blocked | PreserveTube'
@@ -64,7 +64,7 @@ app.get('/savechannel', async ({ query: { url }, set, headers, error, request, r
   if (!url) return error(400, 'No url provided.')
 
   const ranges = await checkIpRanges(headers['cf-connecting-ip'] || headers['x-forwarded-for'] || '')
-  if (ranges.blocked || headers['cf-ipcountry'] === 'T1') {
+  if (ranges.blocked || headers['cf-ipcountry'] === 'T1' || headers['cf-ipcountry'] === 'CN') {
     set.headers['Content-Type'] = 'text/html; charset=utf-8'
     return error(412, await m(eta.render('./blocked', {
       title: 'Blocked | PreserveTube'

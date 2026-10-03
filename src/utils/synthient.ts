@@ -51,6 +51,7 @@ export async function isSynthientBlocked(ip: string): Promise<boolean> {
     const decision = getBlockDecision(body)
     if (!decision.blocked) {
       await redis.set(responseKey(ip), body, 'EX', 24 * 60 * 60)
+      console.log('[synthient] scan allowed')
       return false
     }
 
@@ -60,8 +61,10 @@ export async function isSynthientBlocked(ip: string): Promise<boolean> {
     transaction.set(`synthient:blocked-ip:${ip}`, '1', 'EX', banTtlSeconds)
     if (range) transaction.set(`synthient:blocked-range:${range}`, '1', 'EX', banTtlSeconds)
     await transaction.exec()
+    console.log('[synthient] scan blocked')
     return true
   } catch {
+    console.log('[synthient] scan failed')
     return false
   }
 }

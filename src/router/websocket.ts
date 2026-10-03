@@ -69,7 +69,7 @@ const cleanup = async (ws: any, videoId: string) => {
   await redis.del(ws.id);
 };
 
-const handleUpload = async (ws: any, videoId: string, metadata: { data: any, channelData: any }, isChannel: boolean = false) => {
+const handleUpload = async (ws: any, videoId: string, metadata: { data: any, channelData: any }) => {
   // the pattern of files that have finished downloading is [videoid].mp4, but some extensions are also possible due to
   // current youtube changes, so we need to make sure the other extensions are also covered
   let filePath = fs.readdirSync('./videos/').find(f => f.includes(`${videoId}.`))
@@ -91,7 +91,6 @@ const handleUpload = async (ws: any, videoId: string, metadata: { data: any, cha
       return false;
     }
 
-    if (!isChannel) ws.send(`DONE - ${process.env.FRONTEND}/watch?v=${videoId}`);
     return true;
   } catch (error: any) {
     ws.send(`ERROR - Upload failed for ${videoId}: ${error.message}`);
@@ -126,7 +125,7 @@ app.ws('/save', {
     if (range.list != 'cloudflare') return sendError(ws, 'There\'s something wrong with your connection.')
 
     const blacklistCheck = await checkIpRanges(ws.data.headers['cf-connecting-ip']!)
-    if (blacklistCheck.blocked || ws.data.headers['cf-ipcountry'] == 'T1') return sendError(ws, `Your network is flagged as malicious.`)
+    if (blacklistCheck.blocked || ws.data.headers['cf-ipcountry'] == 'T1' || ws.data.headers['cf-ipcountry'] == 'CN') return sendError(ws, `Your network is flagged as malicious.`)
 
     console.log(`${ws.id} - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
 
@@ -226,6 +225,7 @@ app.ws('/save', {
       }
 
       const uploadSuccess = await handleUpload(ws, videoId, { data, channelData });
+      if (uploadSuccess) ws.send(`DONE - ${process.env.FRONTEND}/watch?v=${videoId}`)
       if (!uploadSuccess) await redis.del(saveKey(videoId));
 
       await cleanup(ws, videoId);
@@ -251,7 +251,7 @@ app.ws('/savechannel', {
     if (range.list != 'cloudflare') return sendError(ws, 'There\'s something wrong with your connection.')
 
     const blacklistCheck = await checkIpRanges(ws.data.headers['cf-connecting-ip']!)
-    if (blacklistCheck.blocked || ws.data.headers['cf-ipcountry'] == 'T1') return sendError(ws, `Your network is flagged as malicious.`)
+    if (blacklistCheck.blocked || ws.data.headers['cf-ipcountry'] == 'T1' || ws.data.headers['cf-ipcountry'] == 'CN') return sendError(ws, `Your network is flagged as malicious.`)
 
     console.log(`${ws.id} - ${ws.data.path} - ${JSON.stringify(ws.data.query)}`)
 
@@ -343,7 +343,7 @@ app.ws('/savechannel', {
           sendError(ws, limitStatus.isNewVisitorLimited ? NEW_VISITOR_STORAGE_LIMIT_MESSAGE : DEFAULT_STORAGE_LIMIT_MESSAGE, false);
           break;
         }
-        const uploadSuccess = await handleUpload(ws, video.videoId, { data, channelData }, true);
+        const uploadSuccess = await handleUpload(ws, video.videoId, { data, channelData });
         if (uploadSuccess) ws.send(`DATA - Created video page for ${video.title}`)
       }
 
