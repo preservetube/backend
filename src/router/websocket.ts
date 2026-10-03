@@ -13,6 +13,7 @@ import redis from '@/utils/redis';
 import { parseSlop } from '@/utils/slop';
 import { checkIpRanges } from '@/utils/ranges';
 import { getRateLimitState, getRateLimitSubjects } from '@/utils/rate-limit';
+import { isSynthientBlocked } from '@/utils/synthient'
 
 const app = new Elysia()
 const videoIds: Record<string, string> = {}
@@ -176,9 +177,12 @@ app.ws('/save', {
           await cleanup(ws, videoId);
           console.log(`captcha failed for ${videoId} - ${JSON.stringify(captchaCheck)}`)
           return sendError(ws, 'Captcha validation failed.');
-        } else {
-          ws.send('DATA - Captcha validated. Starting download...');
         }
+        if (await isSynthientBlocked(ws.data.headers['cf-connecting-ip'] || '')) {
+          await cleanup(ws, videoId)
+          return sendError(ws, 'Your network is flagged as malicious.')
+        }
+        ws.send('DATA - Captcha validated. Starting download...');
       }
 
       const data = await getVideo(videoId)
@@ -272,9 +276,12 @@ app.ws('/savechannel', {
       await cleanup(ws, channelId);
       console.log(`captcha failed for ${channelId} - ${JSON.stringify(captchaCheck)}`)
       return sendError(ws, 'Captcha validation failed.');
-    } else {
-      ws.send('DATA - Captcha validated. Starting download...');
     }
+    if (await isSynthientBlocked(ws.data.headers['cf-connecting-ip'] || '')) {
+      await cleanup(ws, channelId)
+      return sendError(ws, 'Your network is flagged as malicious.')
+    }
+    ws.send('DATA - Captcha validated. Starting download...');
 
     videoIds[ws.id] = `downloading-${channelId}`;
     const [videos, channelData] = await Promise.all([getChannelVideos(channelId), getChannel(channelId)]);
@@ -284,6 +291,10 @@ app.ws('/savechannel', {
     }
 
     for (const video of videos.slice(0, 5)) {
+      if ((await checkIpRanges(ws.data.headers['cf-connecting-ip'] || '')).blocked) {
+        await cleanup(ws, channelId)
+        return sendError(ws, 'Your network is flagged as malicious.')
+      }
       if (!video || (await redis.get(saveKey(video.videoId))) || (await redis.get(`blacklist:${video.videoId}`))) continue;
 
       const already = await db.selectFrom('videos')

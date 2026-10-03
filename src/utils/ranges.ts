@@ -1,5 +1,6 @@
 import { readdir, stat } from 'node:fs/promises'
 import * as path from 'node:path'
+import redis from '@/utils/redis'
 
 export interface BlockedIpResult {
   blocked: boolean
@@ -25,6 +26,10 @@ const asnBanList: number[] = [
   49367, // seflow
 
   14618, // aws
+
+  62327,
+  8075, // microsoft
+  210644, // aeza group
 
   // expressvpn
   206092,
@@ -397,7 +402,14 @@ export async function checkIpRanges(ip: string): Promise<BlockedIpResult> {
     return { blocked: false, list: null, range: null }
   }
 
+  if (await redis.exists(`synthient:blocked-ip:${ip}`)) {
+    return { blocked: true, list: 'synthient', range: null }
+  }
+
   const asnMatch = await resolveIpAsn(parsedIp)
+  if (asnMatch.range && await redis.exists(`synthient:blocked-range:${asnMatch.range}`)) {
+    return { blocked: true, list: 'synthient', range: asnMatch.range }
+  }
   const entries = await readdir(BLOCKED_DIR, { withFileTypes: true })
 
   const files = entries
@@ -442,6 +454,11 @@ export async function checkIpRanges(ip: string): Promise<BlockedIpResult> {
     list: null,
     range: null
   }
+}
+
+export async function getIpNetworkRange(ip: string): Promise<string | null> {
+  const parsedIp = parseIp(ip)
+  return parsedIp ? (await resolveIpAsn(parsedIp)).range : null
 }
 
 const networkRefreshTimer = setInterval(() => {
