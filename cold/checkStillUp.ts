@@ -134,9 +134,6 @@ async function getPageViewsWithRetry(id: string, retries = 3, delay = 1000): Pro
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const response = await fetch(`https://a.gloe.net/api/stats/preservetube.com/top-stats?period=all&date=2026-04-29&filters=%7B%22page%22%3A%22%2Fwatch%2F${id}%22%7D&with_imported=true&comparison=previous_period&compare_from=undefined&compare_to=undefined&match_day_of_week=true`, {
-        headers: {
-          /* removed */
-        }
       })
       if (response.ok) {
         const aJson = await response.json() as any
@@ -221,7 +218,7 @@ async function main() {
 
     console.log(file.id, archivedMetadata?.channelId, archivedMetadata?.title, stillUp, pageViews)
 
-    if ((stillUp && pageViews < 5) || (!stillUp && pageViews < 2)) {
+    if ((stillUp && pageViews < 10) || (!stillUp && pageViews < 3)) {
       fs.appendFileSync(OUTPUT_PATH, `${file.line}\n`)
     }
 
