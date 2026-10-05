@@ -39,7 +39,10 @@ const asnBanList: number[] = [
 
   // tor exits
   60729,
-  215125
+  215125,
+
+  // schools
+  60187
 ]
 
 
@@ -110,7 +113,7 @@ async function getBlockedCidrs(fileName: string, filePath: string) {
       parsedCidrs.push({ cidr, parsed });
     }
   }
-  
+
   blockedCache.set(fileName, { mtimeMs: fileStat.mtimeMs, parsedCidrs });
   return parsedCidrs;
 }
@@ -424,7 +427,7 @@ export async function checkIpRanges(ip: string): Promise<BlockedIpResult> {
     for (const item of cachedCidrs) {
       const { cidr, parsed } = item;
       let matched = false;
-      
+
       if (parsedIp.version === 4 && parsed.version === 4) {
         matched = ((parsedIp.value & parsed.mask) >>> 0) === parsed.network
       } else if (parsedIp.version === 6 && parsed.version === 6) {
